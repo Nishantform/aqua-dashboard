@@ -158,22 +158,22 @@ st.markdown("""
 # DATABASE CONNECTION
 # -------------------------
 
-@st.cache_resource
-def init_connection():
+@st.cache_data(ttl=300)
+def load_all_data():
+    """Load all data from local CSV files"""
     try:
-        db_user = os.getenv("DB_USER", "root")
-        db_pass = os.getenv("DB_PASS", "nis123456789")
-        db_host = os.getenv("DB_HOST", "localhost")
-        db_port = os.getenv("DB_PORT", "3306")
-        db_name = os.getenv("DB_NAME", "aqua")
+        sources = pd.read_csv("water_sources.csv")
+        stations = pd.read_csv("water_monitoring_stations.csv")
+        groundwater = pd.read_csv("groundwater_levels.csv")
+        rainfall = pd.read_csv("rainfall_history.csv")
+        alerts = pd.read_csv("active_alerts.csv")
+        usage = pd.read_csv("water_usage_history.csv")
+        regional = pd.read_csv("regional_stats.csv")
         
-        connection_string = f"mysql+pymysql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}"
-        return create_engine(connection_string)
+        return sources, stations, groundwater, rainfall, alerts, usage, regional
     except Exception as e:
-        st.error(f"Database connection failed: {e}")
-        return None
-
-engine = init_connection()
+        st.error(f"Error loading CSV data: {e}")
+        return [pd.DataFrame()] * 7
 
 # -------------------------
 # DATA LOADING FUNCTIONS
@@ -1420,4 +1420,5 @@ st.markdown("""
 <div style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,229,255,0.1); padding: 5px 10px; border-radius: 5px; font-size: 0.8rem;">
     🔄 Data refreshes every 5 minutes
 </div>
+
 """, unsafe_allow_html=True)
