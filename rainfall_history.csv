@@ -1,0 +1,23 @@
+id,district_name,rainfall_cm,record_year,season
+1,Cherrapunji        ,1150.2,2025,Monsoon      
+2,Bikaner            ,15.4,2025,Summer       
+3,Mumbai             ,280.5,2025,Monsoon      
+4,Ludhiana           ,45.2,2025,Winter       
+5,Chennai            ,120.8,2025,Post-Monsoon 
+6,Jaipur             ,35.4,2025,Summer       
+7,Guwahati           ,180.2,2025,Monsoon      
+8,Kochi              ,310.4,2025,Monsoon      
+9,Ahmedabad          ,65.2,2025,Post-Monsoon 
+10,Patna              ,110.5,2025,Monsoon      
+11,Shimla             ,140.2,2026,Winter       
+12,Hyderabad          ,78.4,2025,Monsoon      
+13,Bhopal             ,95.6,2025,Monsoon      
+14,Thiruvananthapuram ,190.2,2025,Post-Monsoon 
+15,Dehradun           ,210.5,2025,Monsoon      
+16,Agartala           ,240.2,2025,Monsoon      
+17,Bangalore          ,88.5,2025,Post-Monsoon 
+18,Indore             ,72.4,2025,Monsoon      
+19,Lucknow            ,85.2,2025,Monsoon      
+20,Nagpur             ,105.8,2025,Monsoon      
+21,Salem              ,95.0,2025,Monsoon      
+22,Gurdaspur          ,78.0,2025,Monsoon      

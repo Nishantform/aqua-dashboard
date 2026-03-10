@@ -1,0 +1,29 @@
+alert_id,source_name,capacity_percent,ph_level,alert_status,alert_time
+1,Tehri Dam               ,92,7.3,STABLE       ,2026-03-05 23:53:16 
+2,Bhakra Dam              ,60,8.1,LOW STORAGE  ,2026-03-05 23:53:16 
+3,Sardar Sarovar          ,95,7.6,STABLE       ,2026-03-05 23:53:16 
+4,Nagarjuna Sagar         ,48,7.8,LOW STORAGE  ,2026-03-05 23:53:16 
+5,Indira Sagar            ,88,7.2,STABLE       ,2026-03-05 23:53:16 
+6,Rihand Dam              ,40,7.0,CRITICAL     ,2026-03-05 23:53:16 
+7,Idukki Dam              ,90,7.4,STABLE       ,2026-03-05 23:53:16 
+8,Bisalpur Dam            ,35,7.1,CRITICAL     ,2026-03-05 23:53:16 
+9,Mithi - Mumbai          ,28,5.8,CRITICAL     ,2026-03-05 23:32:08 
+10,Yamuna - Agra           ,22,9.4,CRITICAL     ,2026-03-05 21:32:08 
+11,Musi - Hyderabad        ,25,9.1,CRITICAL     ,2026-03-05 19:32:08 
+12,Buckingham Canal        ,20,7.1,CRITICAL     ,2026-03-05 22:32:08 
+13,Sambhar Lake            ,30,8.4,CRITICAL     ,2026-03-05 20:32:08 
+14,Vaigai Dam              ,45,7.2,WARNING      ,2026-03-05 18:32:08 
+15,Upper Bari Doab Canal   ,40,7.3,WARNING      ,2026-03-05 16:32:08 
+16,Sirhind Canal           ,40,7.4,WARNING      ,2026-03-05 12:32:08 
+17,Tungabhadra Dam         ,54,7.8,WARNING      ,2026-03-05 00:32:08 
+18,Bhavani Sagar Dam       ,48,7.5,WARNING      ,2026-03-04 00:32:08 
+19,Mettur Dam              ,71,7.4,STABLE       ,2026-03-05 00:32:08 
+20,Bhakra Dam              ,85,7.2,STABLE       ,2026-03-04 00:32:08 
+21,Tehri Dam               ,92,7.3,STABLE       ,2026-03-03 00:32:08 
+22,Dal Lake                ,95,7.5,STABLE       ,2026-03-02 00:32:08 
+23,Chilika Lake            ,100,7.8,STABLE       ,2026-03-01 00:32:08 
+24,Periyar - Kochi         ,88,7.2,STABLE       ,2026-02-28 00:32:08 
+25,Cauvery - Mettur        ,71,7.4,STABLE       ,2026-03-05 00:32:08 
+26,Cauvery - Srirangapatna ,65,7.6,STABLE       ,2026-03-04 00:32:08 
+27,Godavari - Rajahmundry  ,68,7.8,STABLE       ,2026-03-03 00:32:08 
+28,Krishna - Vijayawada    ,72,7.1,STABLE       ,2026-03-02 00:32:08 

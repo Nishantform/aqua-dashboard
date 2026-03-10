@@ -1,0 +1,73 @@
+source_id,source_name,source_type,capacity_percent,max_capacity_mcm,build_year,state,district,origin_state,is_transboundary
+1,Mettur Dam                ,Reservoir   ,71,2700.0,1934,Tamil Nadu        ,Salem            ,NULL              ,1
+11,Bhakra Dam                ,Dam         ,85,9340.0,1963,Himachal Pradesh  ,Bilaspur         ,Himachal          ,1
+12,Mettur Dam                ,Dam         ,65,2700.0,1934,Tamil Nadu        ,Salem            ,Karnataka         ,1
+13,Sardar Sarovar            ,Dam         ,92,9500.0,2017,Gujarat           ,Narmada          ,Madhya Pradesh    ,1
+14,Upper Bari Doab Canal     ,Canal       ,40,150.0,1859,Punjab            ,Gurdaspur        ,Punjab            ,0
+15,Teesta Barrage            ,Canal       ,75,800.0,1998,West Bengal       ,Gajoldoba        ,Sikkim            ,1
+16,Tehri Dam                 ,Dam         ,92,2600.0,2006,Uttarakhand       ,Tehri            ,Uttarakhand       ,0
+17,Hirakud Dam               ,Dam         ,75,5896.0,1957,Odisha            ,Sambalpur        ,Chhattisgarh      ,1
+18,Nagarjuna Sagar           ,Dam         ,68,9371.0,1967,Telangana         ,Nalgonda         ,Maharashtra       ,1
+19,Indira Sagar              ,Dam         ,88,12220.0,2005,Madhya Pradesh    ,Khandwa          ,MP                ,0
+20,Koyna Dam                 ,Dam         ,72,2797.0,1964,Maharashtra       ,Satara           ,Maharashtra       ,0
+21,Tungabhadra Dam           ,Dam         ,54,3766.0,1953,Karnataka         ,Ballari          ,Karnataka         ,1
+22,Rihand Dam                ,Dam         ,81,10600.0,1962,Uttar Pradesh     ,Sonbhadra        ,Chhattisgarh      ,1
+23,Idukki Dam                ,Dam         ,90,1996.0,1973,Kerala            ,Idukki           ,Kerala            ,0
+24,Vaigai Dam                ,Dam         ,45,175.0,1959,Tamil Nadu        ,Theni            ,Tamil Nadu        ,0
+25,Bisalpur Dam              ,Dam         ,60,1100.0,1999,Rajasthan         ,Tonk             ,Rajasthan         ,0
+26,Farakka Barrage           ,Canal       ,85,1200.0,1975,West Bengal       ,Murshidabad      ,Uttarakhand       ,1
+27,Sirhind Canal             ,Canal       ,40,350.0,1882,Punjab            ,Rupnagar         ,Punjab            ,0
+28,Lower Jhelum Canal        ,Canal       ,65,210.0,1901,J&K               ,Baramulla        ,J&K               ,1
+29,Sarda Canal               ,Canal       ,70,450.0,1928,Uttar Pradesh     ,Pilibhit         ,Nepal             ,1
+30,Buckingham Canal          ,Canal       ,20,100.0,1806,Andhra Pradesh    ,Nellore          ,AP                ,0
+31,Chilika Lake              ,Lake        ,100,950.0,0,Odisha            ,Puri             ,Odisha            ,0
+32,Vembanad Lake             ,Lake        ,100,1200.0,0,Kerala            ,Kottayam         ,Kerala            ,0
+33,Dal Lake                  ,Lake        ,95,300.0,0,J&K               ,Srinagar         ,J&K               ,0
+34,Sambhar Lake              ,Lake        ,30,150.0,0,Rajasthan         ,Jaipur           ,Rajasthan         ,0
+35,Pulicat Lake              ,Lake        ,80,400.0,0,Andhra Pradesh    ,Nellore          ,AP                ,1
+36,Mettur Dam                ,Dam         ,71,2700.0,1934,Tamil Nadu        ,Salem            ,Karnataka         ,1
+37,Bhakra Dam                ,Dam         ,85,9340.0,1963,Himachal Pradesh  ,Bilaspur         ,Himachal Pradesh  ,1
+38,Sardar Sarovar Dam        ,Dam         ,92,9500.0,2017,Gujarat           ,Narmada          ,Madhya Pradesh    ,1
+39,Tehri Dam                 ,Dam         ,92,2600.0,2006,Uttarakhand       ,Tehri            ,Uttarakhand       ,0
+40,Hirakud Dam               ,Dam         ,75,5896.0,1957,Odisha            ,Sambalpur        ,Chhattisgarh      ,1
+41,Nagarjuna Sagar Dam       ,Dam         ,68,9371.0,1967,Telangana         ,Nalgonda         ,Maharashtra       ,1
+42,Indira Sagar Dam          ,Dam         ,88,12220.0,2005,Madhya Pradesh    ,Khandwa          ,Madhya Pradesh    ,0
+43,Koyna Dam                 ,Dam         ,72,2797.0,1964,Maharashtra       ,Satara           ,Maharashtra       ,0
+44,Tungabhadra Dam           ,Dam         ,54,3766.0,1953,Karnataka         ,Ballari          ,Karnataka         ,1
+45,Rihand Dam                ,Dam         ,81,10600.0,1962,Uttar Pradesh     ,Sonbhadra        ,Chhattisgarh      ,1
+46,Idukki Dam                ,Dam         ,90,1996.0,1973,Kerala            ,Idukki           ,Kerala            ,0
+47,Vaigai Dam                ,Dam         ,45,175.0,1959,Tamil Nadu        ,Theni            ,Tamil Nadu        ,0
+48,Bisalpur Dam              ,Dam         ,60,1100.0,1999,Rajasthan         ,Tonk             ,Rajasthan         ,0
+49,Krishna Raja Sagara Dam   ,Dam         ,65,1245.0,1932,Karnataka         ,Mandya           ,Karnataka         ,0
+50,Almatti Dam               ,Dam         ,78,3215.0,2005,Karnataka         ,Bijapur          ,Maharashtra       ,1
+51,Srisailam Dam             ,Dam         ,72,8723.0,1981,Andhra Pradesh    ,Kurnool          ,Telangana         ,1
+52,Cheruthoni Dam            ,Dam         ,88,1745.0,1976,Kerala            ,Idukki           ,Kerala            ,0
+53,Papanasam Dam             ,Dam         ,52,325.0,1944,Tamil Nadu        ,Tirunelveli      ,Tamil Nadu        ,0
+54,Malampuzha Dam            ,Dam         ,63,455.0,1955,Kerala            ,Palakkad         ,Kerala            ,0
+55,Bhavani Sagar Dam         ,Dam         ,48,980.0,1955,Tamil Nadu        ,Erode            ,Tamil Nadu        ,0
+56,Upper Bari Doab Canal     ,Canal       ,40,150.0,1859,Punjab            ,Gurdaspur        ,Punjab            ,0
+57,Teesta Barrage Canal      ,Canal       ,75,800.0,1998,West Bengal       ,Gajoldoba        ,Sikkim            ,1
+58,Farakka Barrage Canal     ,Canal       ,85,1200.0,1975,West Bengal       ,Murshidabad      ,Uttarakhand       ,1
+59,Sirhind Canal             ,Canal       ,40,350.0,1882,Punjab            ,Rupnagar         ,Punjab            ,0
+60,Lower Jhelum Canal        ,Canal       ,65,210.0,1901,Jammu and Kashmir ,Baramulla        ,Jammu and Kashmir ,1
+61,Sarda Canal               ,Canal       ,70,450.0,1928,Uttar Pradesh     ,Pilibhit         ,Nepal             ,1
+62,Buckingham Canal          ,Canal       ,20,100.0,1806,Andhra Pradesh    ,Nellore          ,Andhra Pradesh    ,0
+63,Indira Gandhi Canal       ,Canal       ,82,1580.0,1987,Rajasthan         ,Ganganagar       ,Punjab            ,1
+64,Kurnool Cuddapah Canal    ,Canal       ,55,230.0,1870,Andhra Pradesh    ,Kurnool          ,Andhra Pradesh    ,0
+65,Kakinada Canal            ,Canal       ,68,180.0,1965,Andhra Pradesh    ,East Godavari    ,Andhra Pradesh    ,0
+66,Damodar Canal             ,Canal       ,72,340.0,1955,West Bengal       ,Hooghly          ,Jharkhand         ,1
+67,Dal Lake                  ,Lake        ,95,300.0,0,Jammu and Kashmir ,Srinagar         ,Jammu and Kashmir ,0
+68,Chilika Lake              ,Lake        ,100,950.0,0,Odisha            ,Puri             ,Odisha            ,0
+69,Vembanad Lake             ,Lake        ,100,1200.0,0,Kerala            ,Kottayam         ,Kerala            ,0
+70,Sambhar Lake              ,Lake        ,30,150.0,0,Rajasthan         ,Jaipur           ,Rajasthan         ,0
+71,Pulicat Lake              ,Lake        ,80,400.0,0,Andhra Pradesh    ,Nellore          ,Andhra Pradesh    ,1
+72,Loktak Lake               ,Lake        ,85,380.0,0,Manipur           ,Bishnupur        ,Manipur           ,0
+73,Wular Lake                ,Lake        ,72,250.0,0,Jammu and Kashmir ,Bandipora        ,Jammu and Kashmir ,0
+74,Kolleru Lake              ,Lake        ,65,320.0,0,Andhra Pradesh    ,West Godavari    ,Andhra Pradesh    ,0
+75,Pushkar Lake              ,Lake        ,45,25.0,0,Rajasthan         ,Ajmer            ,Rajasthan         ,0
+76,Umiam Lake                ,Lake        ,90,180.0,1965,Meghalaya         ,East Khasi Hills ,Meghalaya         ,0
+77,Govind Ballabh Pant Sagar ,Reservoir   ,83,2650.0,1976,Uttar Pradesh     ,Sonbhadra        ,Uttar Pradesh     ,0
+78,Dharoi Reservoir          ,Reservoir   ,58,875.0,1978,Gujarat           ,Mehsana          ,Gujarat           ,0
+79,Ujjani Reservoir          ,Reservoir   ,62,1450.0,1980,Maharashtra       ,Solapur          ,Maharashtra       ,0
+80,Jayakwadi Reservoir       ,Reservoir   ,71,2050.0,1976,Maharashtra       ,Aurangabad       ,Maharashtra       ,0
+81,Sri Ram Sagar Reservoir   ,Reservoir   ,55,1560.0,1977,Telangana         ,Nizamabad        ,Maharashtra       ,1

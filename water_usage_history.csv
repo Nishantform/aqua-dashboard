@@ -1,0 +1,88 @@
+id,source_id,sector,sub_sector,consumer_name,consumption_mcm,record_year,record_date,season
+4,1,Agriculture ,Rice Paddy        ,General               ,450.0,2025,NULL        ,Summer       
+5,1,Industrial  ,Textiles          ,General               ,120.0,2025,NULL        ,Summer       
+6,1,Domestic    ,Urban Supply      ,General               ,85.0,2025,NULL        ,Summer       
+91,1,Agriculture ,Rice Paddy        ,Farmer Cooperative    ,450.0,2025,2025-06-15  ,Summer       
+92,1,Agriculture ,Sugarcane         ,Sugar Mills           ,320.0,2025,2025-07-10  ,Monsoon      
+93,1,Industrial  ,Textiles          ,Textile Park          ,120.0,2025,2025-05-20  ,Summer       
+94,1,Industrial  ,Chemicals         ,Chemical Industries   ,85.0,2025,2025-08-05  ,Monsoon      
+95,1,Domestic    ,Urban Supply      ,Salem Municipal       ,85.0,2025,2025-04-10  ,Summer       
+96,1,Domestic    ,Rural Supply      ,Panchayat Union       ,65.0,2025,2025-09-12  ,Post-Monsoon 
+97,1,Agriculture ,Rice Paddy        ,Farmer Cooperative    ,430.0,2024,2024-06-10  ,Summer       
+98,1,Industrial  ,Textiles          ,Textile Park          ,115.0,2024,2024-07-15  ,Monsoon      
+99,11,Agriculture ,Wheat             ,Punjab Farmers        ,850.0,2025,2025-03-15  ,Winter       
+100,11,Agriculture ,Rice Paddy        ,Haryana Farmers       ,780.0,2025,2025-07-20  ,Monsoon      
+101,11,Industrial  ,Power Generation  ,BBMB                  ,450.0,2025,2025-01-10  ,Winter       
+102,11,Domestic    ,Urban Supply      ,Chandigarh MC         ,180.0,2025,2025-05-25  ,Summer       
+103,11,Agriculture ,Cotton            ,Cotton Farmers        ,320.0,2025,2025-08-30  ,Monsoon      
+104,13,Agriculture ,Cotton            ,Gujarat Farmers       ,920.0,2025,2025-07-05  ,Monsoon      
+105,13,Agriculture ,Groundnut         ,Farmer Cooperative    ,450.0,2025,2025-08-12  ,Monsoon      
+106,13,Industrial  ,Petrochemicals    ,Industrial Estate     ,380.0,2025,2025-04-18  ,Summer       
+107,13,Domestic    ,Urban Supply      ,Ahmedabad Municipal   ,250.0,2025,2025-06-22  ,Summer       
+108,13,Domestic    ,Urban Supply      ,Vadodara Municipal    ,180.0,2025,2025-09-05  ,Post-Monsoon 
+109,16,Industrial  ,Power Generation  ,THDC India            ,320.0,2025,2025-02-14  ,Winter       
+110,16,Domestic    ,Urban Supply      ,Delhi Jal Board       ,280.0,2025,2025-05-30  ,Summer       
+111,16,Agriculture ,Vegetables        ,Uttarakhand Farmers   ,120.0,2025,2025-08-08  ,Monsoon      
+112,16,Domestic    ,Urban Supply      ,Uttarakhand Jal       ,95.0,2025,2025-10-15  ,Post-Monsoon 
+113,17,Agriculture ,Rice Paddy        ,Odisha Farmers        ,580.0,2025,2025-07-25  ,Monsoon      
+114,17,Industrial  ,Aluminum          ,NALCO                 ,210.0,2025,2025-03-20  ,Summer       
+115,17,Domestic    ,Urban Supply      ,Sambalpur MC          ,75.0,2025,2025-09-18  ,Post-Monsoon 
+116,17,Agriculture ,Pulses            ,Farmer Cooperative    ,165.0,2025,2025-11-05  ,Winter       
+117,18,Agriculture ,Rice Paddy        ,Telangana Farmers     ,620.0,2025,2025-07-12  ,Monsoon      
+118,18,Agriculture ,Cotton            ,Andhra Farmers        ,340.0,2025,2025-08-22  ,Monsoon      
+119,18,Industrial  ,Fertilizers       ,Fertilizer Plant      ,185.0,2025,2025-04-05  ,Summer       
+120,18,Domestic    ,Urban Supply      ,Hyderabad Metro       ,290.0,2025,2025-05-15  ,Summer       
+121,20,Industrial  ,Power Generation  ,Maharashtra Genco     ,410.0,2025,2025-01-20  ,Winter       
+122,20,Agriculture ,Sugarcane         ,Sugar Cooperatives    ,380.0,2025,2025-02-25  ,Winter       
+123,20,Domestic    ,Urban Supply      ,Pune Municipal        ,195.0,2025,2025-04-30  ,Summer       
+124,20,Agriculture ,Sugarcane         ,Satara Farmers        ,290.0,2025,2025-08-15  ,Monsoon      
+125,21,Agriculture ,Rice Paddy        ,Karnataka Farmers     ,450.0,2025,2025-07-18  ,Monsoon      
+126,21,Agriculture ,Cotton            ,Ballari Farmers       ,280.0,2025,2025-08-25  ,Monsoon      
+127,21,Industrial  ,Mining            ,Iron Ore Industries   ,120.0,2025,2025-03-10  ,Summer       
+128,21,Domestic    ,Urban Supply      ,Ballari Municipal     ,85.0,2025,2025-05-05  ,Summer       
+129,22,Industrial  ,Power Generation  ,NTPC                  ,520.0,2025,2025-01-15  ,Winter       
+130,22,Agriculture ,Rice Paddy        ,UP Farmers            ,380.0,2025,2025-07-22  ,Monsoon      
+131,22,Industrial  ,Coal Mining       ,Coal India            ,210.0,2025,2025-04-12  ,Summer       
+132,22,Domestic    ,Urban Supply      ,Sonbhadra Municipal   ,65.0,2025,2025-09-20  ,Post-Monsoon 
+133,23,Industrial  ,Power Generation  ,KSEB                  ,420.0,2025,2025-02-10  ,Winter       
+134,23,Agriculture ,Spices            ,Idukki Farmers        ,95.0,2025,2025-07-28  ,Monsoon      
+135,23,Domestic    ,Urban Supply      ,Kochi Metro           ,150.0,2025,2025-05-18  ,Summer       
+136,23,Agriculture ,Tea               ,Tea Estates           ,75.0,2025,2025-09-15  ,Post-Monsoon 
+137,24,Agriculture ,Rice Paddy        ,Madurai Farmers       ,85.0,2025,2025-07-08  ,Monsoon      
+138,24,Agriculture ,Cotton            ,Theni Farmers         ,45.0,2025,2025-08-20  ,Monsoon      
+139,24,Domestic    ,Urban Supply      ,Madurai Municipal     ,32.0,2025,2025-04-25  ,Summer       
+140,24,Domestic    ,Rural Supply      ,Panchayat Union       ,18.0,2025,2025-10-10  ,Post-Monsoon 
+141,25,Agriculture ,Wheat             ,Tonk Farmers          ,210.0,2025,2025-03-05  ,Winter       
+142,25,Agriculture ,Pulses            ,Farmer Cooperative    ,85.0,2025,2025-08-12  ,Monsoon      
+143,25,Domestic    ,Urban Supply      ,Jaipur Municipal      ,180.0,2025,2025-05-22  ,Summer       
+144,25,Domestic    ,Urban Supply      ,Ajmer Municipal       ,95.0,2025,2025-09-28  ,Post-Monsoon 
+145,26,Industrial  ,Power Generation  ,NTPC Farakka          ,280.0,2025,2025-01-25  ,Winter       
+146,26,Agriculture ,Rice Paddy        ,Murshidabad Farmers   ,320.0,2025,2025-07-15  ,Monsoon      
+147,26,Agriculture ,Jute              ,Jute Mills            ,150.0,2025,2025-08-28  ,Monsoon      
+148,26,Domestic    ,Urban Supply      ,Kolkata Municipal     ,420.0,2025,2025-04-08  ,Summer       
+149,27,Agriculture ,Wheat             ,Punjab Farmers        ,180.0,2025,2025-03-12  ,Winter       
+150,27,Agriculture ,Rice Paddy        ,Rupnagar Farmers      ,150.0,2025,2025-07-30  ,Monsoon      
+151,27,Agriculture ,Sugarcane         ,Sugar Mills           ,85.0,2025,2025-02-18  ,Winter       
+152,27,Domestic    ,Rural Supply      ,Village Councils      ,35.0,2025,2025-09-05  ,Post-Monsoon 
+153,33,Domestic    ,Tourism           ,Houseboat Owners      ,5.0,2025,2025-06-10  ,Summer       
+154,33,Domestic    ,Tourism           ,Shikara Operators     ,2.0,2025,2025-07-15  ,Monsoon      
+155,33,Domestic    ,Urban Supply      ,Srinagar Municipal    ,45.0,2025,2025-05-20  ,Summer       
+156,33,Agriculture ,Vegetables        ,Floating Gardens      ,8.0,2025,2025-08-05  ,Monsoon      
+157,31,Agriculture ,Aquaculture       ,Fishermen Cooperative ,25.0,2025,2025-01-10  ,Winter       
+158,31,Agriculture ,Prawn Farming     ,Prawn Farmers         ,18.0,2025,2025-07-20  ,Monsoon      
+159,31,Domestic    ,Tourism           ,Tour Operators        ,3.0,2025,2025-10-05  ,Post-Monsoon 
+160,31,Domestic    ,Rural Supply      ,Coastal Villages      ,12.0,2025,2025-04-15  ,Summer       
+161,32,Agriculture ,Backwater Fishing ,Fishermen             ,15.0,2025,2025-01-20  ,Winter       
+162,32,Domestic    ,Tourism           ,Houseboat Operators   ,8.0,2025,2025-08-12  ,Monsoon      
+163,32,Agriculture ,Coconut Farming   ,Coconut Farmers       ,10.0,2025,2025-05-25  ,Summer       
+164,32,Domestic    ,Rural Supply      ,Kuttanad Villages     ,20.0,2025,2025-09-18  ,Post-Monsoon 
+165,1,Agriculture ,Rice Paddy        ,Farmer Cooperative    ,440.0,2024,2024-06-12  ,Summer       
+166,1,Industrial  ,Textiles          ,Textile Park          ,110.0,2024,2024-05-18  ,Summer       
+167,11,Agriculture ,Wheat             ,Punjab Farmers        ,820.0,2024,2024-03-10  ,Winter       
+168,11,Industrial  ,Power Generation  ,BBMB                  ,430.0,2024,2024-01-15  ,Winter       
+169,13,Agriculture ,Cotton            ,Gujarat Farmers       ,890.0,2024,2024-07-08  ,Monsoon      
+170,13,Domestic    ,Urban Supply      ,Ahmedabad Municipal   ,240.0,2024,2024-05-20  ,Summer       
+171,16,Industrial  ,Power Generation  ,THDC India            ,310.0,2024,2024-02-12  ,Winter       
+172,17,Agriculture ,Rice Paddy        ,Odisha Farmers        ,560.0,2024,2024-07-20  ,Monsoon      
+173,18,Agriculture ,Rice Paddy        ,Telangana Farmers     ,600.0,2024,2024-07-15  ,Monsoon      
+174,20,Industrial  ,Power Generation  ,Maharashtra Genco     ,400.0,2024,2024-01-18  ,Winter       

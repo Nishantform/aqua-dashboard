@@ -1,0 +1,29 @@
+region_name,population_count,annual_rainfall_avg_cm
+Ahmedabad       ,8000000,78.0
+Ahmedabad Urban ,6200000,78.4
+Bangalore       ,12600000,97.0
+Bangalore Urban ,11500000,97.2
+Bhopal          ,2200000,98.4
+Chennai         ,12300000,140.0
+Chennai Urban   ,7500000,140.2
+Gurdaspur       ,2298323,85.0
+Guwahati        ,1200000,180.4
+Hyderabad       ,10500000,82.0
+Hyderabad Urban ,8200000,81.4
+Indore          ,2400000,75.4
+Jaipur          ,3100000,52.0
+Kanpur          ,3200000,95.2
+Kolkata Urban   ,4500000,160.8
+Lucknow         ,3400000,100.0
+Ludhiana        ,1850000,65.0
+Mumbai Suburban ,9500000,240.5
+Nagpur          ,2500000,110.0
+North Delhi     ,2500000,61.2
+Patna           ,1700000,115.0
+Pune            ,8200000,72.0
+Pune Urban      ,5500000,72.1
+Salem           ,3482056,102.0
+Srinagar        ,1400000,70.2
+Surat           ,6500000,110.0
+Thane           ,18000000,240.0
+Visakhapatnam   ,2000000,105.2
