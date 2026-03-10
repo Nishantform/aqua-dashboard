@@ -7,7 +7,6 @@ from plotly.subplots import make_subplots
 import folium
 from folium.plugins import MarkerCluster, HeatMap, Fullscreen
 from streamlit_folium import st_folium
-from sqlalchemy import create_engine
 from datetime import datetime
 import json
 import warnings
@@ -170,51 +169,19 @@ def load_all_data():
         usage = pd.read_csv("water_usage_history.csv")
         regional = pd.read_csv("regional_stats.csv")
         
+        # Clean column names by stripping whitespace
+        sources.columns = sources.columns.str.strip()
+        stations.columns = stations.columns.str.strip()
+        groundwater.columns = groundwater.columns.str.strip()
+        rainfall.columns = rainfall.columns.str.strip()
+        alerts.columns = alerts.columns.str.strip()
+        usage.columns = usage.columns.str.strip()
+        regional.columns = regional.columns.str.strip()
+        
         return sources, stations, groundwater, rainfall, alerts, usage, regional
     except Exception as e:
         st.error(f"Error loading CSV data: {e}")
         return [pd.DataFrame()] * 7
-
-# -------------------------
-# DATA LOADING FUNCTIONS
-# -------------------------
-
-@st.cache_data(ttl=300)
-def load_all_data():
-    """Load all data from database"""
-    if engine is None:
-        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-    
-    try:
-        # Water Sources
-        sources = pd.read_sql("SELECT * FROM water_sources", engine)
-        
-        # Monitoring Stations
-        stations = pd.read_sql("SELECT * FROM water_monitoring_stations", engine)
-        
-        # Groundwater Levels
-        groundwater = pd.read_sql("SELECT * FROM groundwater_levels", engine)
-        
-        # Rainfall History
-        rainfall = pd.read_sql("SELECT * FROM rainfall_history", engine)
-        
-        # Active Alerts
-        alerts = pd.read_sql("SELECT * FROM active_alerts", engine)
-        
-        # Water Usage
-        usage = pd.read_sql("""
-            SELECT wu.*, ws.source_name, ws.source_type, ws.state, ws.district 
-            FROM water_usage_history wu
-            LEFT JOIN water_sources ws ON wu.source_id = ws.source_id
-        """, engine)
-        
-        # Regional Stats
-        regional = pd.read_sql("SELECT * FROM regional_stats", engine)
-        
-        return sources, stations, groundwater, rainfall, alerts, usage, regional
-    except Exception as e:
-        st.error(f"Error loading data: {e}")
-        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
 # -------------------------
 # LOAD DATA
@@ -874,7 +841,6 @@ with tab3:
                     template="plotly_dark",
                     markers=True
                 )
-                # FIX 1: Removed erroneous leading whitespace that caused IndentationError
                 fig.update_traces(line_color='#ffd700', line_width=3)
                 st.plotly_chart(fig, use_container_width=True)
             else:
@@ -1081,24 +1047,39 @@ with tab5:
     )
     
     if table_choice == "Water Sources":
-        st.dataframe(
-            filtered_sources[[
-                'source_name', 'source_type', 'capacity_percent', 
-                'max_capacity_mcm', 'build_year', 'age', 'state', 
-                'district', 'origin_state', 'is_transboundary', 'risk_level'
-            ]], 
-            use_container_width=True, 
-            hide_index=True
-        )
+        # Check which columns actually exist to avoid KeyError
+        available_cols = []
+        desired_cols = ['source_name', 'source_type', 'capacity_percent', 'max_capacity_mcm', 
+                       'build_year', 'age', 'state', 'district', 'origin_state', 'is_transboundary', 'risk_level']
+        
+        for col in desired_cols:
+            if col in filtered_sources.columns:
+                available_cols.append(col)
+        
+        if available_cols:
+            st.dataframe(
+                filtered_sources[available_cols], 
+                use_container_width=True, 
+                hide_index=True
+            )
+        else:
+            st.dataframe(filtered_sources, use_container_width=True, hide_index=True)
+            st.warning("Expected columns not found. Showing all available data.")
         
         # Summary statistics
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Total Sources", len(filtered_sources))
         with col2:
-            st.metric("Avg Capacity", f"{filtered_sources['capacity_percent'].mean():.1f}%" if not filtered_sources.empty else "0%")
+            if not filtered_sources.empty and 'capacity_percent' in filtered_sources.columns:
+                st.metric("Avg Capacity", f"{filtered_sources['capacity_percent'].mean():.1f}%")
+            else:
+                st.metric("Avg Capacity", "N/A")
         with col3:
-            st.metric("Transboundary", len(filtered_sources[filtered_sources['is_transboundary'] == 1]) if not filtered_sources.empty else 0)
+            if not filtered_sources.empty and 'is_transboundary' in filtered_sources.columns:
+                st.metric("Transboundary", len(filtered_sources[filtered_sources['is_transboundary'] == 1]))
+            else:
+                st.metric("Transboundary", "N/A")
         
         if not filtered_sources.empty:
             csv = filtered_sources.to_csv(index=False).encode('utf-8')
@@ -1113,31 +1094,45 @@ with tab5:
     elif table_choice == "Monitoring Stations":
         # Filter stations based on selections
         display_stations = stations.copy()
-        if selected_state != "All States":
+        if selected_state != "All States" and 'state_name' in display_stations.columns:
             display_stations = display_stations[display_stations['state_name'] == selected_state]
-        if selected_district != "All Districts":
+        if selected_district != "All Districts" and 'district_name' in display_stations.columns:
             display_stations = display_stations[display_stations['district_name'] == selected_district]
         
-        st.dataframe(
-            display_stations[[
-                'station_name', 'state_name', 'district_name', 
-                'latitude', 'longitude', 'ph_level', 
-                'dissolved_oxygen_mg_l', 'turbidity_ntu', 'status'
-            ]],
-            use_container_width=True,
-            hide_index=True
-        )
+        # Check which columns exist
+        available_cols = []
+        desired_cols = ['station_name', 'state_name', 'district_name', 'latitude', 
+                       'longitude', 'ph_level', 'dissolved_oxygen_mg_l', 'turbidity_ntu', 'status']
+        
+        for col in desired_cols:
+            if col in display_stations.columns:
+                available_cols.append(col)
+        
+        if available_cols:
+            st.dataframe(
+                display_stations[available_cols],
+                use_container_width=True,
+                hide_index=True
+            )
+        else:
+            st.dataframe(display_stations, use_container_width=True, hide_index=True)
         
         # Summary statistics
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Total Stations", len(display_stations))
         with col2:
-            active = len(display_stations[display_stations['status'] == 'Active'])
-            st.metric("Active Stations", active)
+            if 'status' in display_stations.columns:
+                active = len(display_stations[display_stations['status'] == 'Active'])
+                st.metric("Active Stations", active)
+            else:
+                st.metric("Active Stations", "N/A")
         with col3:
-            maintenance = len(display_stations[display_stations['status'] == 'Maintenance'])
-            st.metric("Maintenance", maintenance)
+            if 'status' in display_stations.columns:
+                maintenance = len(display_stations[display_stations['status'] == 'Maintenance'])
+                st.metric("Maintenance", maintenance)
+            else:
+                st.metric("Maintenance", "N/A")
         
         if not display_stations.empty:
             csv = display_stations.to_csv(index=False).encode('utf-8')
@@ -1152,28 +1147,43 @@ with tab5:
     elif table_choice == "Groundwater Levels":
         # Filter groundwater based on selections
         display_gw = groundwater.copy()
-        if selected_district != "All Districts":
+        if selected_district != "All Districts" and 'district_name' in display_gw.columns:
             display_gw = display_gw[display_gw['district_name'] == selected_district]
         
-        st.dataframe(
-            display_gw[[
-                'district_name', 'avg_depth_meters', 'extraction_pct',
-                'recharge_rate_mcm', 'assessment_year', 'stress_level'
-            ]],
-            use_container_width=True,
-            hide_index=True
-        )
+        # Check which columns exist
+        available_cols = []
+        desired_cols = ['district_name', 'avg_depth_meters', 'extraction_pct',
+                       'recharge_rate_mcm', 'assessment_year', 'stress_level']
+        
+        for col in desired_cols:
+            if col in display_gw.columns:
+                available_cols.append(col)
+        
+        if available_cols:
+            st.dataframe(
+                display_gw[available_cols],
+                use_container_width=True,
+                hide_index=True
+            )
+        else:
+            st.dataframe(display_gw, use_container_width=True, hide_index=True)
         
         # Summary statistics
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Districts", len(display_gw))
         with col2:
-            avg_depth = display_gw['avg_depth_meters'].mean() if not display_gw.empty else 0
-            st.metric("Avg Depth", f"{avg_depth:.1f} m")
+            if not display_gw.empty and 'avg_depth_meters' in display_gw.columns:
+                avg_depth = display_gw['avg_depth_meters'].mean()
+                st.metric("Avg Depth", f"{avg_depth:.1f} m")
+            else:
+                st.metric("Avg Depth", "N/A")
         with col3:
-            high_stress = len(display_gw[display_gw['stress_level'] == 'High']) if not display_gw.empty else 0
-            st.metric("High Stress", high_stress)
+            if not display_gw.empty and 'stress_level' in display_gw.columns:
+                high_stress = len(display_gw[display_gw['stress_level'] == 'High'])
+                st.metric("High Stress", high_stress)
+            else:
+                st.metric("High Stress", "N/A")
         
         if not display_gw.empty:
             csv = display_gw.to_csv(index=False).encode('utf-8')
@@ -1188,28 +1198,42 @@ with tab5:
     elif table_choice == "Rainfall History":
         # Filter rainfall based on selections
         display_rain = rainfall.copy()
-        if selected_district != "All Districts":
+        if selected_district != "All Districts" and 'district_name' in display_rain.columns:
             display_rain = display_rain[display_rain['district_name'] == selected_district]
         
-        st.dataframe(
-            display_rain[[
-                'district_name', 'rainfall_cm', 'record_year', 
-                'season', 'rainfall_category'
-            ]],
-            use_container_width=True,
-            hide_index=True
-        )
+        # Check which columns exist
+        available_cols = []
+        desired_cols = ['district_name', 'rainfall_cm', 'record_year', 'season', 'rainfall_category']
+        
+        for col in desired_cols:
+            if col in display_rain.columns:
+                available_cols.append(col)
+        
+        if available_cols:
+            st.dataframe(
+                display_rain[available_cols],
+                use_container_width=True,
+                hide_index=True
+            )
+        else:
+            st.dataframe(display_rain, use_container_width=True, hide_index=True)
         
         # Summary statistics
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Total Records", len(display_rain))
         with col2:
-            avg_rain = display_rain['rainfall_cm'].mean() if not display_rain.empty else 0
-            st.metric("Avg Rainfall", f"{avg_rain:.1f} cm")
+            if not display_rain.empty and 'rainfall_cm' in display_rain.columns:
+                avg_rain = display_rain['rainfall_cm'].mean()
+                st.metric("Avg Rainfall", f"{avg_rain:.1f} cm")
+            else:
+                st.metric("Avg Rainfall", "N/A")
         with col3:
-            years = display_rain['record_year'].nunique() if not display_rain.empty else 0
-            st.metric("Years of Data", years)
+            if not display_rain.empty and 'record_year' in display_rain.columns:
+                years = display_rain['record_year'].nunique()
+                st.metric("Years of Data", years)
+            else:
+                st.metric("Years of Data", "N/A")
         
         if not display_rain.empty:
             csv = display_rain.to_csv(index=False).encode('utf-8')
@@ -1224,33 +1248,48 @@ with tab5:
     elif table_choice == "Water Usage":
         # Filter usage based on selections
         display_usage = usage.copy()
-        if selected_state != "All States":
+        if selected_state != "All States" and 'state' in display_usage.columns:
             display_usage = display_usage[display_usage['state'] == selected_state]
-        if selected_district != "All Districts":
+        if selected_district != "All Districts" and 'district' in display_usage.columns:
             display_usage = display_usage[display_usage['district'] == selected_district]
-        if selected_type != "All Types":
+        if selected_type != "All Types" and 'source_type' in display_usage.columns:
             display_usage = display_usage[display_usage['source_type'] == selected_type]
         
-        st.dataframe(
-            display_usage[[
-                'source_name', 'source_type', 'sector', 'sub_sector',
-                'consumer_name', 'consumption_mcm', 'record_year',
-                'season', 'state', 'district'
-            ]],
-            use_container_width=True,
-            hide_index=True
-        )
+        # Check which columns exist
+        available_cols = []
+        desired_cols = ['source_name', 'source_type', 'sector', 'sub_sector',
+                       'consumer_name', 'consumption_mcm', 'record_year',
+                       'season', 'state', 'district']
+        
+        for col in desired_cols:
+            if col in display_usage.columns:
+                available_cols.append(col)
+        
+        if available_cols:
+            st.dataframe(
+                display_usage[available_cols],
+                use_container_width=True,
+                hide_index=True
+            )
+        else:
+            st.dataframe(display_usage, use_container_width=True, hide_index=True)
         
         # Summary statistics
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Total Records", len(display_usage))
         with col2:
-            total_consumption = display_usage['consumption_mcm'].sum() if not display_usage.empty else 0
-            st.metric("Total Consumption", f"{total_consumption:.1f} MCM")
+            if not display_usage.empty and 'consumption_mcm' in display_usage.columns:
+                total_consumption = display_usage['consumption_mcm'].sum()
+                st.metric("Total Consumption", f"{total_consumption:.1f} MCM")
+            else:
+                st.metric("Total Consumption", "N/A")
         with col3:
-            avg_consumption = display_usage['consumption_mcm'].mean() if not display_usage.empty else 0
-            st.metric("Avg Consumption", f"{avg_consumption:.1f} MCM")
+            if not display_usage.empty and 'consumption_mcm' in display_usage.columns:
+                avg_consumption = display_usage['consumption_mcm'].mean()
+                st.metric("Avg Consumption", f"{avg_consumption:.1f} MCM")
+            else:
+                st.metric("Avg Consumption", "N/A")
         
         if not display_usage.empty:
             csv = display_usage.to_csv(index=False).encode('utf-8')
@@ -1265,34 +1304,47 @@ with tab5:
     elif table_choice == "Active Alerts":
         # Filter alerts based on selections
         display_alerts = alerts.copy()
-        if selected_state != "All States":
+        if selected_state != "All States" and 'source_name' in display_alerts.columns and not sources.empty:
             state_sources = sources[sources['state'] == selected_state]['source_name'].tolist()
             display_alerts = display_alerts[display_alerts['source_name'].isin(state_sources)]
-        if selected_district != "All Districts":
+        if selected_district != "All Districts" and 'source_name' in display_alerts.columns and not sources.empty:
             district_sources = sources[sources['district'] == selected_district]['source_name'].tolist()
             display_alerts = display_alerts[display_alerts['source_name'].isin(district_sources)]
         
-        st.dataframe(
-            display_alerts[[
-                'source_name', 'capacity_percent', 'ph_level',
-                'alert_status', 'alert_time'
-            ]],
-            use_container_width=True,
-            hide_index=True
-        )
+        # Check which columns exist
+        available_cols = []
+        desired_cols = ['source_name', 'capacity_percent', 'ph_level', 'alert_status', 'alert_time']
+        
+        for col in desired_cols:
+            if col in display_alerts.columns:
+                available_cols.append(col)
+        
+        if available_cols:
+            st.dataframe(
+                display_alerts[available_cols],
+                use_container_width=True,
+                hide_index=True
+            )
+        else:
+            st.dataframe(display_alerts, use_container_width=True, hide_index=True)
         
         # Summary statistics
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Total Alerts", len(display_alerts))
         with col2:
-            critical = len(display_alerts[display_alerts['alert_status'] == 'CRITICAL'])
-            st.metric("Critical", critical)
+            if not display_alerts.empty and 'alert_status' in display_alerts.columns:
+                critical = len(display_alerts[display_alerts['alert_status'] == 'CRITICAL'])
+                st.metric("Critical", critical)
+            else:
+                st.metric("Critical", "N/A")
         with col3:
-            warning = len(display_alerts[display_alerts['alert_status'] == 'WARNING'])
-            st.metric("Warning", warning)
+            if not display_alerts.empty and 'alert_status' in display_alerts.columns:
+                warning = len(display_alerts[display_alerts['alert_status'] == 'WARNING'])
+                st.metric("Warning", warning)
+            else:
+                st.metric("Warning", "N/A")
         
-        # FIX 2: Removed erroneous leading whitespace that caused IndentationError
         if not display_alerts.empty:
             csv = display_alerts.to_csv(index=False).encode('utf-8')
             st.download_button(
@@ -1304,24 +1356,39 @@ with tab5:
             )
     
     elif table_choice == "Regional Statistics":
-        st.dataframe(
-            regional[[
-                'region_name', 'population_count', 'annual_rainfall_avg_cm'
-            ]],
-            use_container_width=True,
-            hide_index=True
-        )
+        # Check which columns exist
+        available_cols = []
+        desired_cols = ['region_name', 'population_count', 'annual_rainfall_avg_cm']
+        
+        for col in desired_cols:
+            if col in regional.columns:
+                available_cols.append(col)
+        
+        if available_cols:
+            st.dataframe(
+                regional[available_cols],
+                use_container_width=True,
+                hide_index=True
+            )
+        else:
+            st.dataframe(regional, use_container_width=True, hide_index=True)
         
         # Summary statistics
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Total Regions", len(regional))
         with col2:
-            total_pop = regional['population_count'].sum() if not regional.empty else 0
-            st.metric("Total Population", f"{total_pop:,}")
+            if not regional.empty and 'population_count' in regional.columns:
+                total_pop = regional['population_count'].sum()
+                st.metric("Total Population", f"{total_pop:,}")
+            else:
+                st.metric("Total Population", "N/A")
         with col3:
-            avg_rain = regional['annual_rainfall_avg_cm'].mean() if not regional.empty else 0
-            st.metric("Avg Rainfall", f"{avg_rain:.1f} cm")
+            if not regional.empty and 'annual_rainfall_avg_cm' in regional.columns:
+                avg_rain = regional['annual_rainfall_avg_cm'].mean()
+                st.metric("Avg Rainfall", f"{avg_rain:.1f} cm")
+            else:
+                st.metric("Avg Rainfall", "N/A")
         
         if not regional.empty:
             csv = regional.to_csv(index=False).encode('utf-8')
@@ -1365,9 +1432,9 @@ if st.sidebar.button("📦 Export All Filtered Data", use_container_width=True):
     export_data = {
         'water_sources': filtered_sources,
         'monitoring_stations': filtered_stations,
-        'groundwater': groundwater[groundwater['district_name'].isin(filtered_sources['district'].unique())] if not filtered_sources.empty else pd.DataFrame(),
-        'rainfall': rainfall[rainfall['district_name'].isin(filtered_sources['district'].unique())] if not filtered_sources.empty else pd.DataFrame(),
-        'usage': usage[usage['source_id'].isin(filtered_sources['source_id'])] if not filtered_sources.empty else pd.DataFrame()
+        'groundwater': groundwater[groundwater['district_name'].isin(filtered_sources['district'].unique())] if not filtered_sources.empty and 'district_name' in groundwater.columns and 'district' in filtered_sources.columns else pd.DataFrame(),
+        'rainfall': rainfall[rainfall['district_name'].isin(filtered_sources['district'].unique())] if not filtered_sources.empty and 'district_name' in rainfall.columns and 'district' in filtered_sources.columns else pd.DataFrame(),
+        'usage': usage[usage['source_id'].isin(filtered_sources['source_id'])] if not filtered_sources.empty and 'source_id' in usage.columns and 'source_id' in filtered_sources.columns else pd.DataFrame()
     }
     
     # Create Excel file with multiple sheets
@@ -1420,5 +1487,4 @@ st.markdown("""
 <div style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,229,255,0.1); padding: 5px 10px; border-radius: 5px; font-size: 0.8rem;">
     🔄 Data refreshes every 5 minutes
 </div>
-
 """, unsafe_allow_html=True)
