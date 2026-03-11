@@ -877,15 +877,16 @@ with tab2:
     # 7. Display map
     st_folium(m, width=1300, height=600)
     
-# 8. Map statistics
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.metric("Sources on Map", sources_on_map)
-with col2:
-    st.metric("Total Filtered Sources", len(filtered_sources))
-with col3:
-    coverage = (sources_on_map/len(filtered_sources)*100) if len(filtered_sources) > 0 else 0
-    st.metric("Coordinate Coverage", f"{coverage:.1f}%")
+    # 8. Map statistics
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Sources on Map", sources_on_map)
+    with col2:
+        st.metric("Total Filtered Sources", len(filtered_sources))
+        with col3:
+        coverage = (sources_on_map/len(filtered_sources)*100) if len(filtered_sources) > 0 else 0
+        st.metric("Coordinate Coverage", f"{coverage:.1f}%")
+    
     # 9. Legend
     st.markdown("---")
     cols = st.columns(5)
@@ -1062,41 +1063,55 @@ with tab4:
     st.subheader("🚨 Active Alerts and Warnings")
     
     if not alerts.empty:
+        # FIRST, MERGE ALERTS WITH SOURCES TO GET PROPER LOCATION INFO
+        alerts_with_source = alerts.copy()
+        
+        if not sources.empty and 'source_name' in sources.columns:
+            # Get only needed columns from sources
+            source_cols = ['source_name', 'source_type', 'district', 'state']
+            available_source_cols = [col for col in source_cols if col in sources.columns]
+            
+            if available_source_cols:
+                # Merge alerts with source information
+                alerts_with_source = alerts.merge(
+                    sources[available_source_cols],
+                    on='source_name',
+                    how='left'
+                )
+        
         # Count alerts by status
-        alert_counts = alerts['alert_status'].value_counts()
+        alert_counts = alerts_with_source['alert_status'].value_counts()
         
         # Create metrics for each alert type
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric("🔴 CRITICAL", alert_counts.get('CRITICAL', 0), 
-                     delta="Immediate action required" if alert_counts.get('CRITICAL', 0) > 0 else None,
+            critical_count = alert_counts.get('CRITICAL', 0)
+            st.metric("🔴 CRITICAL", critical_count, 
+                     delta="Immediate action required" if critical_count > 0 else None,
                      delta_color="inverse")
         with col2:
-            st.metric("🟡 WARNING", alert_counts.get('WARNING', 0),
-                     delta="Monitor closely" if alert_counts.get('WARNING', 0) > 0 else None)
+            warning_count = alert_counts.get('WARNING', 0)
+            st.metric("🟡 WARNING", warning_count,
+                     delta="Monitor closely" if warning_count > 0 else None)
         with col3:
-            st.metric("🟢 STABLE", alert_counts.get('STABLE', 0))
+            stable_count = alert_counts.get('STABLE', 0)
+            st.metric("🟢 STABLE", stable_count)
         with col4:
-            st.metric("📊 TOTAL", len(alerts))
+            st.metric("📊 TOTAL", len(alerts_with_source))
         
         st.markdown("---")
         
         # Filter alerts based on selected filters
-        filtered_alerts = alerts.copy()
-        if selected_state != "All States" and not sources.empty:
-            # Get sources in selected state
-            state_sources = sources[sources['state'] == selected_state]['source_name'].tolist()
-            filtered_alerts = filtered_alerts[filtered_alerts['source_name'].isin(state_sources)]
+        filtered_alerts = alerts_with_source.copy()
         
-        if selected_district != "All Districts" and not sources.empty:
-            # Get sources in selected district
-            district_sources = sources[sources['district'] == selected_district]['source_name'].tolist()
-            filtered_alerts = filtered_alerts[filtered_alerts['source_name'].isin(district_sources)]
+        if selected_state != "All States" and 'state' in filtered_alerts.columns:
+            filtered_alerts = filtered_alerts[filtered_alerts['state'] == selected_state]
         
-        if selected_type != "All Types" and not sources.empty:
-            # Get sources of selected type
-            type_sources = sources[sources['source_type'] == selected_type]['source_name'].tolist()
-            filtered_alerts = filtered_alerts[filtered_alerts['source_name'].isin(type_sources)]
+        if selected_district != "All Districts" and 'district' in filtered_alerts.columns:
+            filtered_alerts = filtered_alerts[filtered_alerts['district'] == selected_district]
+        
+        if selected_type != "All Types" and 'source_type' in filtered_alerts.columns:
+            filtered_alerts = filtered_alerts[filtered_alerts['source_type'] == selected_type]
         
         # Add alert type selector
         alert_type_filter = st.selectbox(
@@ -1111,7 +1126,7 @@ with tab4:
         if filtered_alerts.empty:
             st.info(f"ℹ️ No {alert_type_filter.lower()} alerts match the current filters")
         else:
-            # Sort alerts by severity (CRITICAL first, then WARNING, then STABLE)
+            # Sort alerts by severity
             severity_order = {'CRITICAL': 0, 'WARNING': 1, 'STABLE': 2}
             filtered_alerts['severity_rank'] = filtered_alerts['alert_status'].map(severity_order)
             filtered_alerts = filtered_alerts.sort_values('severity_rank').drop('severity_rank', axis=1)
@@ -1133,8 +1148,20 @@ with tab4:
                     icon = "🟢"
                     severity_text = "NORMAL OPERATIONS"
                 
-                # Get additional source info
-                source_info = sources[sources['source_name'] == alert['source_name']].iloc[0] if not sources[sources['source_name'] == alert['source_name']].empty else None
+                # Get source information (now available from merge)
+                source_type = alert.get('source_type', 'Unknown')
+                district = alert.get('district', 'Unknown')
+                state = alert.get('state', 'Unknown')
+                
+                # Format location string properly
+                if district != 'Unknown' and state != 'Unknown':
+                    location_str = f"{district}, {state}"
+                elif district != 'Unknown':
+                    location_str = f"{district}"
+                elif state != 'Unknown':
+                    location_str = f"{state}"
+                else:
+                    location_str = "Location unknown"
                 
                 # Format alert time
                 alert_time = alert['alert_time']
@@ -1149,9 +1176,7 @@ with tab4:
                         <div>
                             <h3 style="margin:0;">{icon} {alert['source_name']}</h3>
                             <p style="color: #8892b0; margin:0;">
-                                {source_info['source_type'] if source_info is not None else 'Unknown'} | 
-                                {source_info['district'] if source_info is not None else 'Unknown'}, 
-                                {source_info['state'] if source_info is not None else 'Unknown'}
+                                {source_type} | {location_str}
                             </p>
                         </div>
                         <div style="text-align: right;">
@@ -1175,7 +1200,7 @@ with tab4:
                             </div>
                         </div>
                         <div>
-                            <p><strong>🧪 pH Level:</strong> {alert['ph_level']}</p>
+                            <p><strong>🧪 pH Level:</strong> {alert.get('ph_level', 'N/A')}</p>
                             <p><strong>⏰ Alert Time:</strong> {time_str}</p>
                         </div>
                     </div>
@@ -1477,16 +1502,30 @@ with tab5:
     elif table_choice == "Active Alerts":
         # Filter alerts based on selections
         display_alerts = alerts.copy()
-        if selected_state != "All States" and 'source_name' in display_alerts.columns and not sources.empty:
-            state_sources = sources[sources['state'] == selected_state]['source_name'].tolist()
-            display_alerts = display_alerts[display_alerts['source_name'].isin(state_sources)]
-        if selected_district != "All Districts" and 'source_name' in display_alerts.columns and not sources.empty:
-            district_sources = sources[sources['district'] == selected_district]['source_name'].tolist()
-            display_alerts = display_alerts[display_alerts['source_name'].isin(district_sources)]
+        
+        # Merge with sources to get location info for display
+        if not sources.empty and 'source_name' in sources.columns:
+            source_cols = ['source_name', 'source_type', 'district', 'state']
+            available_source_cols = [col for col in source_cols if col in sources.columns]
+            
+            if available_source_cols:
+                display_alerts = display_alerts.merge(
+                    sources[available_source_cols],
+                    on='source_name',
+                    how='left'
+                )
+        
+        if selected_state != "All States" and 'state' in display_alerts.columns:
+            display_alerts = display_alerts[display_alerts['state'] == selected_state]
+        if selected_district != "All Districts" and 'district' in display_alerts.columns:
+            display_alerts = display_alerts[display_alerts['district'] == selected_district]
+        if selected_type != "All Types" and 'source_type' in display_alerts.columns:
+            display_alerts = display_alerts[display_alerts['source_type'] == selected_type]
         
         # Check which columns exist
         available_cols = []
-        desired_cols = ['source_name', 'capacity_percent', 'ph_level', 'alert_status', 'alert_time', 'alert_reason']
+        desired_cols = ['source_name', 'source_type', 'district', 'state', 'capacity_percent', 
+                       'ph_level', 'alert_status', 'alert_time', 'alert_reason']
         
         for col in desired_cols:
             if col in display_alerts.columns:
@@ -1494,13 +1533,10 @@ with tab5:
         
         if available_cols:
             # Format alert_time for display
-            if 'alert_time' in available_cols:
-                display_copy = display_alerts[available_cols].copy()
-                if 'alert_time' in display_copy.columns and pd.api.types.is_datetime64_any_dtype(display_copy['alert_time']):
-                    display_copy['alert_time'] = display_copy['alert_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
-                st.dataframe(display_copy, use_container_width=True, hide_index=True)
-            else:
-                st.dataframe(display_alerts[available_cols], use_container_width=True, hide_index=True)
+            display_copy = display_alerts[available_cols].copy()
+            if 'alert_time' in display_copy.columns and pd.api.types.is_datetime64_any_dtype(display_copy['alert_time']):
+                display_copy['alert_time'] = display_copy['alert_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
+            st.dataframe(display_copy, use_container_width=True, hide_index=True)
         else:
             st.dataframe(display_alerts, use_container_width=True, hide_index=True)
         
@@ -1615,7 +1651,8 @@ if st.sidebar.button("📦 Export All Filtered Data", use_container_width=True):
         'monitoring_stations': filtered_stations,
         'groundwater': groundwater[groundwater['district_name'].isin(filtered_sources['district'].unique())] if not filtered_sources.empty and 'district_name' in groundwater.columns and 'district' in filtered_sources.columns else pd.DataFrame(),
         'rainfall': rainfall[rainfall['district_name'].isin(filtered_sources['district'].unique())] if not filtered_sources.empty and 'district_name' in rainfall.columns and 'district' in filtered_sources.columns else pd.DataFrame(),
-        'usage': usage[usage['source_id'].isin(filtered_sources['source_id'])] if not filtered_sources.empty and 'source_id' in usage.columns and 'source_id' in filtered_sources.columns else pd.DataFrame()
+        'usage': usage[usage['source_id'].isin(filtered_sources['source_id'])] if not filtered_sources.empty and 'source_id' in usage.columns and 'source_id' in filtered_sources.columns else pd.DataFrame(),
+        'alerts': alerts[alerts['source_name'].isin(filtered_sources['source_name'])] if not filtered_sources.empty and 'source_name' in alerts.columns and 'source_name' in filtered_sources.columns else pd.DataFrame()
     }
     
     # Create Excel file with multiple sheets
@@ -1669,4 +1706,3 @@ st.markdown("""
     🔄 Data refreshes every 5 minutes
 </div>
 """, unsafe_allow_html=True)
-
