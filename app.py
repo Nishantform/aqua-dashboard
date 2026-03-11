@@ -883,7 +883,7 @@ with tab2:
         st.metric("Sources on Map", sources_on_map)
     with col2:
         st.metric("Total Filtered Sources", len(filtered_sources))
-        with col3:
+    with col3:
         coverage = (sources_on_map/len(filtered_sources)*100) if len(filtered_sources) > 0 else 0
         st.metric("Coordinate Coverage", f"{coverage:.1f}%")
     
@@ -1706,3 +1706,4 @@ st.markdown("""
     🔄 Data refreshes every 5 minutes
 </div>
 """, unsafe_allow_html=True)
+
