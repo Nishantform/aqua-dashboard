@@ -150,6 +150,15 @@ st.markdown("""
         border-top: 1px solid #1f2937;
         margin-top: 30px;
     }
+    
+    /* Alert reasons */
+    .alert-reason {
+        background: rgba(255,255,255,0.05);
+        padding: 8px;
+        border-radius: 5px;
+        margin-top: 10px;
+        font-size: 0.9rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -221,6 +230,49 @@ if not sources.empty:
         labels=['Critical', 'Moderate', 'Good'],
         include_lowest=True
     )
+
+# Process Alerts - Add reason for alert
+if not alerts.empty:
+    # Convert alert_time to datetime if it's string
+    if 'alert_time' in alerts.columns and alerts['alert_time'].dtype == 'object':
+        alerts['alert_time'] = pd.to_datetime(alerts['alert_time'], errors='coerce')
+    
+    # Add alert reason based on conditions
+    def get_alert_reason(row):
+        reasons = []
+        if row.get('capacity_percent', 100) < 30:
+            reasons.append(f"Critical capacity: {row['capacity_percent']:.1f}%")
+        elif row.get('capacity_percent', 100) < 60:
+            reasons.append(f"Low capacity: {row['capacity_percent']:.1f}%")
+        
+        if row.get('ph_level', 7) < 6.5:
+            reasons.append(f"pH too low: {row['ph_level']}")
+        elif row.get('ph_level', 7) > 8.5:
+            reasons.append(f"pH too high: {row['ph_level']}")
+        
+        if 'dissolved_oxygen_mg_l' in row and row['dissolved_oxygen_mg_l'] < 4:
+            reasons.append(f"Low dissolved oxygen: {row['dissolved_oxygen_mg_l']} mg/L")
+        
+        if 'turbidity_ntu' in row and row['turbidity_ntu'] > 5:
+            reasons.append(f"High turbidity: {row['turbidity_ntu']} NTU")
+        
+        if not reasons:
+            reasons.append("Monitoring alert - Routine check")
+        
+        return " | ".join(reasons)
+    
+    alerts['alert_reason'] = alerts.apply(get_alert_reason, axis=1)
+    
+    # Determine alert status based on conditions
+    def determine_alert_status(row):
+        if row.get('capacity_percent', 100) < 30 or row.get('ph_level', 7) < 6 or row.get('ph_level', 7) > 9:
+            return 'CRITICAL'
+        elif row.get('capacity_percent', 100) < 60 or (row.get('ph_level', 7) < 6.5 or row.get('ph_level', 7) > 8.5):
+            return 'WARNING'
+        else:
+            return 'STABLE'
+    
+    alerts['alert_status'] = alerts.apply(determine_alert_status, axis=1)
 
 # Add coordinates from monitoring stations to sources
 def add_coordinates_to_sources(sources_df, stations_df):
@@ -467,7 +519,11 @@ with col4:
     st.metric("Sources on Map", f"{sources_with_coords}")
 
 with col5:
-    st.metric("Active Alerts", f"{len(alerts)}", delta_color="inverse")
+    if not alerts.empty:
+        critical_alerts = len(alerts[alerts['alert_status'] == 'CRITICAL']) if 'alert_status' in alerts.columns else 0
+        st.metric("Critical Alerts", f"{critical_alerts}", delta_color="inverse")
+    else:
+        st.metric("Active Alerts", "0", delta_color="inverse")
 
 st.markdown("---")
 
@@ -681,30 +737,67 @@ with tab2:
             if source['capacity_percent'] < 30:
                 color = '#ff4444'  # Critical
                 risk_text = "CRITICAL"
+                status_icon = "🔴"
             elif source['capacity_percent'] < 60:
                 color = '#ffd700'  # Moderate
                 risk_text = "MODERATE"
+                status_icon = "🟡"
             else:
                 color = '#00ff9d'  # Good
                 risk_text = "GOOD"
+                status_icon = "🟢"
             
             heat_data.append([source['latitude'], source['longitude']])
             sources_on_map += 1
             
+            # Get alert info for this source if any
+            source_alerts = alerts[alerts['source_name'] == source['source_name']] if not alerts.empty else pd.DataFrame()
+            alert_info = ""
+            if not source_alerts.empty:
+                latest_alert = source_alerts.iloc[-1]
+                alert_info = f"""
+                <tr>
+                    <td colspan="2" style="padding-top: 10px;">
+                        <div style="background: rgba(255,0,0,0.1); padding: 5px; border-radius: 5px;">
+                            <b>⚠️ Active Alert:</b> {latest_alert.get('alert_reason', 'Unknown')}<br>
+                            <small>Status: {latest_alert.get('alert_status', 'Unknown')}</small>
+                        </div>
+                    </td>
+                </tr>
+                """
+            
             popup_html = f"""
-            <div style="font-family: Arial; min-width: 250px;">
-                <h4 style="color: {color}; margin:0;">{source['source_name']}</h4>
-                <hr style="margin:5px 0;">
-                <table style="width:100%;">
-                    <tr><td><b>Type:</b></td><td>{source['source_type']}</td></tr>
-                    <tr><td><b>District:</b></td><td>{source['district']}</td></tr>
-                    <tr><td><b>State:</b></td><td>{source['state']}</td></tr>
-                    <tr><td><b>Capacity:</b></td><td>{source['capacity_percent']:.1f}%</td></tr>
-                    <tr><td><b>Age:</b></td><td>{source['age']:.0f} years</td></tr>
-                    <tr><td><b>Risk Level:</b></td><td><span style="color:{color}; font-weight:bold;">{risk_text}</span></td></tr>
+            <div style="font-family: Arial; min-width: 300px; background: #0a0f1e; color: white; padding: 15px; border-radius: 10px; border-left: 5px solid {color};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="color: {color}; margin:0;">{status_icon} {source['source_name']}</h4>
+                    <span style="background: {color}; color: black; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold;">{risk_text}</span>
+                </div>
+                <hr style="margin:10px 0; border-color: #1f2937;">
+                <table style="width:100%; border-collapse: collapse;">
+                    <tr><td style="padding: 5px 0;"><b>📍 Type:</b></td><td>{source['source_type']}</td></tr>
+                    <tr><td style="padding: 5px 0;"><b>🏛️ District:</b></td><td>{source['district']}</td></tr>
+                    <tr><td style="padding: 5px 0;"><b>🗺️ State:</b></td><td>{source['state']}</td></tr>
+                    <tr><td style="padding: 5px 0;"><b>📊 Capacity:</b></td>
+                        <td>
+                            {source['capacity_percent']:.1f}%
+                            <div style="background: #1f2937; height: 6px; width: 100px; border-radius: 3px; margin-top: 3px;">
+                                <div style="background: {color}; width: {source['capacity_percent']}%; height: 6px; border-radius: 3px;"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr><td style="padding: 5px 0;"><b>📅 Age:</b></td><td>{source['age']:.0f} years</td></tr>
+                    <tr><td style="padding: 5px 0;"><b>💯 Health Score:</b></td><td>{source['health_score']:.1f}%</td></tr>
+                    <tr><td style="padding: 5px 0;"><b>🏭 Build Year:</b></td><td>{source['build_year']:.0f}</td></tr>
+                    {alert_info}
                 </table>
+                <div style="margin-top: 10px; font-size: 0.8rem; color: #8892b0; text-align: center;">
+                    Click to view details | Last updated: {datetime.now().strftime('%H:%M:%S')}
+                </div>
             </div>
             """
+            
+            # Enhanced tooltip with more info
+            tooltip_text = f"{source['source_name']} | {source['capacity_percent']:.0f}% capacity | {risk_text}"
             
             # Create circle marker
             marker = folium.CircleMarker(
@@ -713,8 +806,8 @@ with tab2:
                 color=color,
                 fill=True,
                 fillOpacity=0.7,
-                popup=folium.Popup(popup_html, max_width=300),
-                tooltip=f"{source['source_name']} - {source['capacity_percent']:.0f}%"
+                popup=folium.Popup(popup_html, max_width=350),
+                tooltip=tooltip_text
             )
             
             if show_clusters and len(filtered_sources) > 10:
@@ -741,25 +834,44 @@ with tab2:
             # Color based on status
             if station['status'] == 'Active':
                 station_color = 'green'
+                status_icon = "✅"
             elif station['status'] == 'Maintenance':
                 station_color = 'orange'
+                status_icon = "🔄"
             else:
                 station_color = 'red'
+                status_icon = "⚠️"
+            
+            # Get water quality status
+            water_quality = "Good"
+            quality_color = "#00ff9d"
+            if station['ph_level'] < 6.5 or station['ph_level'] > 8.5:
+                water_quality = "Poor"
+                quality_color = "#ff4444"
+            elif station['dissolved_oxygen_mg_l'] < 4:
+                water_quality = "Fair"
+                quality_color = "#ffd700"
             
             station_popup = f"""
-            <b>{station['station_name']}</b><br>
-            District: {station['district_name']}<br>
-            Status: {station['status']}<br>
-            pH: {station['ph_level']}<br>
-            DO: {station['dissolved_oxygen_mg_l']} mg/L<br>
-            Turbidity: {station['turbidity_ntu']} NTU
+            <div style="font-family: Arial; min-width: 280px; background: #0a0f1e; color: white; padding: 15px; border-radius: 10px; border-left: 5px solid {station_color};">
+                <h4 style="margin:0 0 10px 0; color: white;">{status_icon} {station['station_name']}</h4>
+                <hr style="margin:10px 0; border-color: #1f2937;">
+                <table style="width:100%; border-collapse: collapse;">
+                    <tr><td><b>📍 District:</b></td><td>{station['district_name']}</td></tr>
+                    <tr><td><b>📊 Status:</b></td><td><span style="color: {station_color};">{station['status']}</span></td></tr>
+                    <tr><td><b>🧪 pH Level:</b></td><td>{station['ph_level']}</td></tr>
+                    <tr><td><b>💨 DO (mg/L):</b></td><td>{station['dissolved_oxygen_mg_l']}</td></tr>
+                    <tr><td><b>🌫️ Turbidity (NTU):</b></td><td>{station['turbidity_ntu']}</td></tr>
+                    <tr><td><b>💧 Quality:</b></td><td><span style="color: {quality_color};">{water_quality}</span></td></tr>
+                </table>
+            </div>
             """
             
             folium.Marker(
                 location=[station['latitude'], station['longitude']],
-                icon=folium.Icon(color=station_color, icon='info-sign'),
+                icon=folium.Icon(color=station_color, icon='info-sign', prefix='glyphicon'),
                 popup=folium.Popup(station_popup, max_width=300),
-                tooltip=f"Station: {station['station_name']}"
+                tooltip=f"Station: {station['station_name']} | {station['status']}"
             ).add_to(m)
     
     # 7. Display map
@@ -769,7 +881,7 @@ with tab2:
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Sources on Map", sources_on_map)
-    with col2:
+       with col2:
         st.metric("Total Filtered Sources", len(filtered_sources))
     with col3:
         coverage = (sources_on_map/len(filtered_sources)*100) if len(filtered_sources) > 0 else 0
@@ -944,7 +1056,7 @@ with tab3:
                 st.info("Insufficient data for correlation")
 
 # =====================
-# TAB 4: ALERTS
+# TAB 4: ALERTS (FIXED VERSION)
 # =====================
 
 with tab4:
@@ -954,52 +1066,83 @@ with tab4:
         # Count alerts by status
         alert_counts = alerts['alert_status'].value_counts()
         
-        col1, col2, col3 = st.columns(3)
+        # Create metrics for each alert type
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric("CRITICAL", alert_counts.get('CRITICAL', 0))
+            st.metric("🔴 CRITICAL", alert_counts.get('CRITICAL', 0), 
+                     delta="Immediate action required" if alert_counts.get('CRITICAL', 0) > 0 else None,
+                     delta_color="inverse")
         with col2:
-            st.metric("WARNING", alert_counts.get('WARNING', 0))
+            st.metric("🟡 WARNING", alert_counts.get('WARNING', 0),
+                     delta="Monitor closely" if alert_counts.get('WARNING', 0) > 0 else None)
         with col3:
-            st.metric("STABLE", alert_counts.get('STABLE', 0))
+            st.metric("🟢 STABLE", alert_counts.get('STABLE', 0))
+        with col4:
+            st.metric("📊 TOTAL", len(alerts))
         
         st.markdown("---")
         
         # Filter alerts based on selected filters
         filtered_alerts = alerts.copy()
-        if selected_state != "All States":
+        if selected_state != "All States" and not sources.empty:
             # Get sources in selected state
             state_sources = sources[sources['state'] == selected_state]['source_name'].tolist()
             filtered_alerts = filtered_alerts[filtered_alerts['source_name'].isin(state_sources)]
         
-        if selected_district != "All Districts":
+        if selected_district != "All Districts" and not sources.empty:
             # Get sources in selected district
             district_sources = sources[sources['district'] == selected_district]['source_name'].tolist()
             filtered_alerts = filtered_alerts[filtered_alerts['source_name'].isin(district_sources)]
         
-        if selected_type != "All Types":
+        if selected_type != "All Types" and not sources.empty:
             # Get sources of selected type
             type_sources = sources[sources['source_type'] == selected_type]['source_name'].tolist()
             filtered_alerts = filtered_alerts[filtered_alerts['source_name'].isin(type_sources)]
         
+        # Add alert type selector
+        alert_type_filter = st.selectbox(
+            "Filter by Alert Status",
+            ["All Alerts", "CRITICAL", "WARNING", "STABLE"],
+            index=0
+        )
+        
+        if alert_type_filter != "All Alerts":
+            filtered_alerts = filtered_alerts[filtered_alerts['alert_status'] == alert_type_filter]
+        
         if filtered_alerts.empty:
-            st.info("ℹ️ No alerts match the current filters")
+            st.info(f"ℹ️ No {alert_type_filter.lower()} alerts match the current filters")
         else:
+            # Sort alerts by severity (CRITICAL first, then WARNING, then STABLE)
+            severity_order = {'CRITICAL': 0, 'WARNING': 1, 'STABLE': 2}
+            filtered_alerts['severity_rank'] = filtered_alerts['alert_status'].map(severity_order)
+            filtered_alerts = filtered_alerts.sort_values('severity_rank').drop('severity_rank', axis=1)
+            
             for _, alert in filtered_alerts.iterrows():
                 if alert['alert_status'] == 'CRITICAL':
                     status_class = "status-critical"
                     border_color = "#ff4444"
                     icon = "🔴"
+                    severity_text = "IMMEDIATE ACTION REQUIRED"
                 elif alert['alert_status'] == 'WARNING':
                     status_class = "status-warning"
                     border_color = "#ffd700"
                     icon = "🟡"
+                    severity_text = "MONITOR CLOSELY"
                 else:
                     status_class = "status-good"
                     border_color = "#00ff9d"
                     icon = "🟢"
+                    severity_text = "NORMAL OPERATIONS"
                 
                 # Get additional source info
                 source_info = sources[sources['source_name'] == alert['source_name']].iloc[0] if not sources[sources['source_name'] == alert['source_name']].empty else None
+                
+                # Format alert time
+                alert_time = alert['alert_time']
+                if isinstance(alert_time, pd.Timestamp):
+                    time_str = alert_time.strftime('%Y-%m-%d %H:%M:%S')
+                else:
+                    time_str = str(alert_time)
                 
                 st.markdown(f"""
                 <div class="info-card" style="border-left: 5px solid {border_color};">
@@ -1012,20 +1155,51 @@ with tab4:
                                 {source_info['state'] if source_info is not None else 'Unknown'}
                             </p>
                         </div>
-                        <span class="{status_class}" style="font-size: 1.2rem;">{alert['alert_status']}</span>
+                        <div style="text-align: right;">
+                            <span class="{status_class}" style="font-size: 1.2rem; display: block;">{alert['alert_status']}</span>
+                            <small style="color: #8892b0;">{severity_text}</small>
+                        </div>
                     </div>
                     <hr style="margin:10px 0; border-color: {border_color};">
-                    <div style="display: flex; gap: 30px;">
-                        <div>
-                            <p><strong>Capacity:</strong> {alert['capacity_percent']}%</p>
-                            <div style="background: #1f2937; height: 10px; width: 150px; border-radius: 5px;">
+                    
+                    <!-- Alert Reason Section -->
+                    <div class="alert-reason" style="background: rgba({','.join(str(int(border_color.lstrip('#')[i:i+2], 16)) for i in (0, 2, 4))}, 0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                        <strong style="color: {border_color};">⚠️ Alert Reason:</strong>
+                        <p style="margin: 5px 0 0 0; color: white;">{alert['alert_reason']}</p>
+                    </div>
+                    
+                    <div style="display: flex; gap: 30px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <p><strong>📊 Current Capacity:</strong> {alert['capacity_percent']}%</p>
+                            <div style="background: #1f2937; height: 10px; width: 100%; border-radius: 5px;">
                                 <div style="background: {border_color}; width: {alert['capacity_percent']}%; height: 10px; border-radius: 5px;"></div>
                             </div>
                         </div>
                         <div>
-                            <p><strong>pH Level:</strong> {alert['ph_level']}</p>
-                            <p><strong>Time:</strong> {alert['alert_time']}</p>
+                            <p><strong>🧪 pH Level:</strong> {alert['ph_level']}</p>
+                            <p><strong>⏰ Alert Time:</strong> {time_str}</p>
                         </div>
+                    </div>
+                    
+                    <!-- Additional Metrics -->
+                    <div style="display: flex; gap: 20px; margin-top: 15px; padding-top: 10px; border-top: 1px solid #1f2937;">
+                        <div>
+                            <small style="color: #8892b0;">Dissolved Oxygen</small>
+                            <p style="margin:0;"><strong>{alert.get('dissolved_oxygen_mg_l', 'N/A')} mg/L</strong></p>
+                        </div>
+                        <div>
+                            <small style="color: #8892b0;">Turbidity</small>
+                            <p style="margin:0;"><strong>{alert.get('turbidity_ntu', 'N/A')} NTU</strong></p>
+                        </div>
+                        <div>
+                            <small style="color: #8892b0;">Temperature</small>
+                            <p style="margin:0;"><strong>{alert.get('temperature_c', 'N/A')} °C</strong></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Button -->
+                    <div style="margin-top: 15px;">
+                        <a href="#" style="background: {border_color}; color: black; padding: 5px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; display: inline-block;" onclick="alert('View details for {alert['source_name']}')">View Details →</a>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -1313,18 +1487,21 @@ with tab5:
         
         # Check which columns exist
         available_cols = []
-        desired_cols = ['source_name', 'capacity_percent', 'ph_level', 'alert_status', 'alert_time']
+        desired_cols = ['source_name', 'capacity_percent', 'ph_level', 'alert_status', 'alert_time', 'alert_reason']
         
         for col in desired_cols:
             if col in display_alerts.columns:
                 available_cols.append(col)
         
         if available_cols:
-            st.dataframe(
-                display_alerts[available_cols],
-                use_container_width=True,
-                hide_index=True
-            )
+            # Format alert_time for display
+            if 'alert_time' in available_cols:
+                display_copy = display_alerts[available_cols].copy()
+                if 'alert_time' in display_copy.columns and pd.api.types.is_datetime64_any_dtype(display_copy['alert_time']):
+                    display_copy['alert_time'] = display_copy['alert_time'].dt.strftime('%Y-%m-%d %H:%M:%S')
+                st.dataframe(display_copy, use_container_width=True, hide_index=True)
+            else:
+                st.dataframe(display_alerts[available_cols], use_container_width=True, hide_index=True)
         else:
             st.dataframe(display_alerts, use_container_width=True, hide_index=True)
         
@@ -1335,15 +1512,20 @@ with tab5:
         with col2:
             if not display_alerts.empty and 'alert_status' in display_alerts.columns:
                 critical = len(display_alerts[display_alerts['alert_status'] == 'CRITICAL'])
-                st.metric("Critical", critical)
+                st.metric("🔴 Critical", critical)
             else:
-                st.metric("Critical", "N/A")
+                st.metric("🔴 Critical", "N/A")
         with col3:
             if not display_alerts.empty and 'alert_status' in display_alerts.columns:
                 warning = len(display_alerts[display_alerts['alert_status'] == 'WARNING'])
-                st.metric("Warning", warning)
+                st.metric("🟡 Warning", warning)
             else:
-                st.metric("Warning", "N/A")
+                st.metric("🟡 Warning", "N/A")
+        
+        # Add stable count as additional metric
+        if not display_alerts.empty and 'alert_status' in display_alerts.columns:
+            stable = len(display_alerts[display_alerts['alert_status'] == 'STABLE'])
+            st.metric("🟢 Stable", stable)
         
         if not display_alerts.empty:
             csv = display_alerts.to_csv(index=False).encode('utf-8')
