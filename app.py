@@ -1085,7 +1085,7 @@ with tab3:
                 st.info("Insufficient data for correlation")
 
 # =====================
-# TAB 4: ALERTS (FIXED VERSION)
+# TAB 4: ALERTS (COMPLETELY FIXED VERSION)
 # =====================
 
 with tab4:
@@ -1107,6 +1107,11 @@ with tab4:
                     on='source_name',
                     how='left'
                 )
+                
+                # Fill NaN values with appropriate defaults
+                alerts_with_source['source_type'] = alerts_with_source['source_type'].fillna('Unknown')
+                alerts_with_source['district'] = alerts_with_source['district'].fillna('Unknown')
+                alerts_with_source['state'] = alerts_with_source['state'].fillna('Unknown')
         
         # Count alerts by status
         alert_counts = alerts_with_source['alert_status'].value_counts()
@@ -1161,6 +1166,7 @@ with tab4:
             filtered_alerts = filtered_alerts.sort_values('severity_rank').drop('severity_rank', axis=1)
             
             for _, alert in filtered_alerts.iterrows():
+                # Determine status and colors
                 if alert['alert_status'] == 'CRITICAL':
                     status_class = "status-critical"
                     border_color = "#ff4444"
@@ -1177,10 +1183,18 @@ with tab4:
                     icon = "🟢"
                     severity_text = "NORMAL OPERATIONS"
                 
-                # Get source information (now available from merge)
-                source_type = alert.get('source_type', 'Unknown')
-                district = alert.get('district', 'Unknown')
-                state = alert.get('state', 'Unknown')
+                # Get source information with proper NaN handling
+                source_type = str(alert.get('source_type', 'Unknown'))
+                district = str(alert.get('district', 'Unknown'))
+                state = str(alert.get('state', 'Unknown'))
+                
+                # Clean up any NaN strings
+                if source_type.lower() == 'nan':
+                    source_type = 'Unknown'
+                if district.lower() == 'nan':
+                    district = 'Unknown'
+                if state.lower() == 'nan':
+                    state = 'Unknown'
                 
                 # Format location string properly
                 if district != 'Unknown' and state != 'Unknown':
@@ -1198,6 +1212,50 @@ with tab4:
                     time_str = alert_time.strftime('%Y-%m-%d %H:%M:%S')
                 else:
                     time_str = str(alert_time)
+                
+                # Get capacity with proper formatting
+                capacity = alert.get('capacity_percent', 'N/A')
+                if pd.isna(capacity) or capacity == 'nan':
+                    capacity_display = 'N/A'
+                    capacity_value = 0
+                else:
+                    try:
+                        capacity_value = float(capacity)
+                        capacity_display = f"{capacity_value:.1f}%"
+                    except:
+                        capacity_display = str(capacity)
+                        capacity_value = 0
+                
+                # Get pH level with proper formatting
+                ph_level = alert.get('ph_level', 'N/A')
+                if pd.isna(ph_level) or ph_level == 'nan':
+                    ph_display = 'N/A'
+                else:
+                    ph_display = str(ph_level)
+                
+                # Get additional metrics with proper NaN handling
+                do_value = alert.get('dissolved_oxygen_mg_l', 'N/A')
+                if pd.isna(do_value) or do_value == 'nan':
+                    do_display = 'N/A'
+                else:
+                    do_display = f"{do_value} mg/L"
+                
+                turbidity = alert.get('turbidity_ntu', 'N/A')
+                if pd.isna(turbidity) or turbidity == 'nan':
+                    turbidity_display = 'N/A'
+                else:
+                    turbidity_display = f"{turbidity} NTU"
+                
+                temperature = alert.get('temperature_c', 'N/A')
+                if pd.isna(temperature) or temperature == 'nan':
+                    temp_display = 'N/A'
+                else:
+                    temp_display = f"{temperature} °C"
+                
+                # Get alert reason with proper handling
+                alert_reason = alert.get('alert_reason', 'No reason provided')
+                if pd.isna(alert_reason) or alert_reason == 'nan':
+                    alert_reason = 'No reason provided'
                 
                 st.markdown(f"""
                 <div class="info-card" style="border-left: 5px solid {border_color};">
@@ -1218,18 +1276,18 @@ with tab4:
                     <!-- Alert Reason Section -->
                     <div class="alert-reason" style="background: rgba({','.join(str(int(border_color.lstrip('#')[i:i+2], 16)) for i in (0, 2, 4))}, 0.1); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
                         <strong style="color: {border_color};">⚠️ Alert Reason:</strong>
-                        <p style="margin: 5px 0 0 0; color: white;">{alert['alert_reason']}</p>
+                        <p style="margin: 5px 0 0 0; color: white;">{alert_reason}</p>
                     </div>
                     
                     <div style="display: flex; gap: 30px; flex-wrap: wrap;">
                         <div style="flex: 1; min-width: 200px;">
-                            <p><strong>📊 Current Capacity:</strong> {alert.get('capacity_percent', 'N/A')}%</p>
+                            <p><strong>📊 Current Capacity:</strong> {capacity_display}</p>
                             <div style="background: #1f2937; height: 10px; width: 100%; border-radius: 5px;">
-                                <div style="background: {border_color}; width: {alert.get('capacity_percent', 0)}%; height: 10px; border-radius: 5px;"></div>
+                                <div style="background: {border_color}; width: {capacity_value}%; height: 10px; border-radius: 5px;"></div>
                             </div>
                         </div>
                         <div>
-                            <p><strong>🧪 pH Level:</strong> {alert.get('ph_level', 'N/A')}</p>
+                            <p><strong>🧪 pH Level:</strong> {ph_display}</p>
                             <p><strong>⏰ Alert Time:</strong> {time_str}</p>
                         </div>
                     </div>
@@ -1238,15 +1296,15 @@ with tab4:
                     <div style="display: flex; gap: 20px; margin-top: 15px; padding-top: 10px; border-top: 1px solid #1f2937;">
                         <div>
                             <small style="color: #8892b0;">Dissolved Oxygen</small>
-                            <p style="margin:0;"><strong>{alert.get('dissolved_oxygen_mg_l', 'N/A')} mg/L</strong></p>
+                            <p style="margin:0;"><strong>{do_display}</strong></p>
                         </div>
                         <div>
                             <small style="color: #8892b0;">Turbidity</small>
-                            <p style="margin:0;"><strong>{alert.get('turbidity_ntu', 'N/A')} NTU</strong></p>
+                            <p style="margin:0;"><strong>{turbidity_display}</strong></p>
                         </div>
                         <div>
                             <small style="color: #8892b0;">Temperature</small>
-                            <p style="margin:0;"><strong>{alert.get('temperature_c', 'N/A')} °C</strong></p>
+                            <p style="margin:0;"><strong>{temp_display}</strong></p>
                         </div>
                     </div>
                     
@@ -1757,3 +1815,4 @@ st.markdown("""
     🔄 Data refreshes every 5 minutes
 </div>
 """, unsafe_allow_html=True)
+
