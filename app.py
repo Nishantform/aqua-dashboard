@@ -240,20 +240,22 @@ if not alerts.empty:
     # Add alert reason based on conditions
     def get_alert_reason(row):
         reasons = []
-        if row.get('capacity_percent', 100) < 30:
-            reasons.append(f"Critical capacity: {row['capacity_percent']:.1f}%")
-        elif row.get('capacity_percent', 100) < 60:
-            reasons.append(f"Low capacity: {row['capacity_percent']:.1f}%")
+        if pd.notna(row.get('capacity_percent')):
+            if row['capacity_percent'] < 30:
+                reasons.append(f"Critical capacity: {row['capacity_percent']:.1f}%")
+            elif row['capacity_percent'] < 60:
+                reasons.append(f"Low capacity: {row['capacity_percent']:.1f}%")
         
-        if row.get('ph_level', 7) < 6.5:
-            reasons.append(f"pH too low: {row['ph_level']}")
-        elif row.get('ph_level', 7) > 8.5:
-            reasons.append(f"pH too high: {row['ph_level']}")
+        if pd.notna(row.get('ph_level')):
+            if row['ph_level'] < 6.5:
+                reasons.append(f"pH too low: {row['ph_level']}")
+            elif row['ph_level'] > 8.5:
+                reasons.append(f"pH too high: {row['ph_level']}")
         
-        if 'dissolved_oxygen_mg_l' in row and row['dissolved_oxygen_mg_l'] < 4:
+        if 'dissolved_oxygen_mg_l' in row and pd.notna(row['dissolved_oxygen_mg_l']) and row['dissolved_oxygen_mg_l'] < 4:
             reasons.append(f"Low dissolved oxygen: {row['dissolved_oxygen_mg_l']} mg/L")
         
-        if 'turbidity_ntu' in row and row['turbidity_ntu'] > 5:
+        if 'turbidity_ntu' in row and pd.notna(row['turbidity_ntu']) and row['turbidity_ntu'] > 5:
             reasons.append(f"High turbidity: {row['turbidity_ntu']} NTU")
         
         if not reasons:
@@ -265,9 +267,13 @@ if not alerts.empty:
     
     # Determine alert status based on conditions
     def determine_alert_status(row):
-        if row.get('capacity_percent', 100) < 30 or row.get('ph_level', 7) < 6 or row.get('ph_level', 7) > 9:
+        if pd.notna(row.get('capacity_percent')) and row['capacity_percent'] < 30:
             return 'CRITICAL'
-        elif row.get('capacity_percent', 100) < 60 or (row.get('ph_level', 7) < 6.5 or row.get('ph_level', 7) > 8.5):
+        elif pd.notna(row.get('ph_level')) and (row['ph_level'] < 6 or row['ph_level'] > 9):
+            return 'CRITICAL'
+        elif pd.notna(row.get('capacity_percent')) and row['capacity_percent'] < 60:
+            return 'WARNING'
+        elif pd.notna(row.get('ph_level')) and (row['ph_level'] < 6.5 or row['ph_level'] > 8.5):
             return 'WARNING'
         else:
             return 'STABLE'
@@ -284,22 +290,24 @@ def add_coordinates_to_sources(sources_df, stations_df):
     df = sources_df.copy()
     
     # Create a mapping of district to first available coordinates
-    stations_df['district_clean'] = stations_df['district_name'].str.strip().str.lower()
-    
-    # Get first coordinates per district
-    district_coords = stations_df.groupby('district_clean').agg({
-        'latitude': 'first',
-        'longitude': 'first'
-    }).reset_index()
-    
-    # Clean source districts for matching
-    df['district_clean'] = df['district'].str.strip().str.lower()
-    
-    # Merge
-    df = df.merge(district_coords, on='district_clean', how='left')
-    
-    # Drop temporary column
-    df = df.drop('district_clean', axis=1)
+    if 'district_name' in stations_df.columns:
+        stations_df['district_clean'] = stations_df['district_name'].str.strip().str.lower()
+        
+        # Get first coordinates per district
+        district_coords = stations_df.groupby('district_clean').agg({
+            'latitude': 'first',
+            'longitude': 'first'
+        }).reset_index()
+        
+        # Clean source districts for matching
+        if 'district' in df.columns:
+            df['district_clean'] = df['district'].str.strip().str.lower()
+            
+            # Merge
+            df = df.merge(district_coords, on='district_clean', how='left')
+            
+            # Drop temporary column
+            df = df.drop('district_clean', axis=1)
     
     return df
 
@@ -307,7 +315,7 @@ def add_coordinates_to_sources(sources_df, stations_df):
 sources = add_coordinates_to_sources(sources, stations)
 
 # Process Groundwater
-if not groundwater.empty:
+if not groundwater.empty and 'avg_depth_meters' in groundwater.columns:
     groundwater['stress_level'] = pd.cut(
         groundwater['avg_depth_meters'],
         bins=[0, 20, 40, 100],
@@ -315,7 +323,7 @@ if not groundwater.empty:
     )
 
 # Process Rainfall
-if not rainfall.empty:
+if not rainfall.empty and 'rainfall_cm' in rainfall.columns:
     rainfall['rainfall_category'] = pd.cut(
         rainfall['rainfall_cm'],
         bins=[0, 50, 150, 300, float('inf')],
@@ -340,9 +348,10 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("### 📅 Time Filters")
 
 # Year filter
+year_range = (1900, 2025)
 if not sources.empty and 'build_year' in sources.columns:
     available_years = sorted(sources['build_year'].dropna().unique())
-    if available_years:
+    if len(available_years) > 0:
         min_year = int(min(available_years))
         max_year = int(max(available_years))
         year_range = st.sidebar.slider(
@@ -351,10 +360,6 @@ if not sources.empty and 'build_year' in sources.columns:
             max_value=max_year,
             value=(min_year, max_year)
         )
-    else:
-        year_range = (1900, 2025)
-else:
-    year_range = (1900, 2025)
 
 st.sidebar.markdown("---")
 
@@ -362,23 +367,22 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("### 🌍 Geographic Filters")
 
 # State filter - default to "All States"
+selected_state = "All States"
 if not sources.empty and 'state' in sources.columns:
     states = ['All States'] + sorted(sources['state'].dropna().unique().tolist())
     selected_state = st.sidebar.selectbox("State", states, index=0)
-else:
-    selected_state = "All States"
 
 # District filter based on state
+selected_district = "All Districts"
 if not sources.empty and 'district' in sources.columns:
     if selected_state != "All States":
         districts = sources[sources['state'] == selected_state]['district'].dropna().unique()
     else:
         districts = sources['district'].dropna().unique()
     
-    districts = ['All Districts'] + sorted(districts.tolist())
-    selected_district = st.sidebar.selectbox("District", districts, index=0)
-else:
-    selected_district = "All Districts"
+    if len(districts) > 0:
+        districts = ['All Districts'] + sorted(districts.tolist())
+        selected_district = st.sidebar.selectbox("District", districts, index=0)
 
 st.sidebar.markdown("---")
 
@@ -386,13 +390,13 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("### 💧 Source Filters")
 
 # Source type - default to "All Types"
+selected_type = "All Types"
 if not sources.empty and 'source_type' in sources.columns:
     source_types = ['All Types'] + sorted(sources['source_type'].dropna().unique().tolist())
     selected_type = st.sidebar.selectbox("Source Type", source_types, index=0)
-else:
-    selected_type = "All Types"
 
 # Capacity range
+capacity_range = (0, 100)
 if not sources.empty and 'capacity_percent' in sources.columns:
     min_cap = float(sources['capacity_percent'].min())
     max_cap = float(sources['capacity_percent'].max())
@@ -402,15 +406,12 @@ if not sources.empty and 'capacity_percent' in sources.columns:
         max_value=max_cap,
         value=(min_cap, max_cap)
     )
-else:
-    capacity_range = (0, 100)
 
 # Risk level filter
+selected_risk = "All Risk Levels"
 if not sources.empty and 'risk_level' in sources.columns:
     risk_options = ['All Risk Levels'] + list(sources['risk_level'].unique())
     selected_risk = st.sidebar.selectbox("Risk Level", risk_options, index=0)
-else:
-    selected_risk = "All Risk Levels"
 
 st.sidebar.markdown("---")
 
@@ -440,15 +441,15 @@ def apply_filters():
     filtered_sources = sources.copy()
     
     # Apply state filter
-    if selected_state != "All States":
+    if selected_state != "All States" and 'state' in filtered_sources.columns:
         filtered_sources = filtered_sources[filtered_sources['state'] == selected_state]
     
     # Apply district filter
-    if selected_district != "All Districts":
+    if selected_district != "All Districts" and 'district' in filtered_sources.columns:
         filtered_sources = filtered_sources[filtered_sources['district'] == selected_district]
     
     # Apply source type filter
-    if selected_type != "All Types":
+    if selected_type != "All Types" and 'source_type' in filtered_sources.columns:
         filtered_sources = filtered_sources[filtered_sources['source_type'] == selected_type]
     
     # Apply year filter
@@ -478,10 +479,10 @@ def filter_stations():
     """Filter stations based on selected state and district"""
     filtered_stations = stations.copy()
     
-    if selected_state != "All States":
+    if selected_state != "All States" and 'state_name' in filtered_stations.columns:
         filtered_stations = filtered_stations[filtered_stations['state_name'] == selected_state]
     
-    if selected_district != "All Districts":
+    if selected_district != "All Districts" and 'district_name' in filtered_stations.columns:
         filtered_stations = filtered_stations[filtered_stations['district_name'] == selected_district]
     
     return filtered_stations
@@ -507,20 +508,20 @@ with col1:
     )
 
 with col2:
-    avg_cap = filtered_sources['capacity_percent'].mean() if not filtered_sources.empty else 0
+    avg_cap = filtered_sources['capacity_percent'].mean() if not filtered_sources.empty and 'capacity_percent' in filtered_sources.columns else 0
     st.metric("Avg Capacity", f"{avg_cap:.1f}%")
 
 with col3:
-    critical = len(filtered_sources[filtered_sources['capacity_percent'] < 30]) if not filtered_sources.empty else 0
+    critical = len(filtered_sources[filtered_sources['capacity_percent'] < 30]) if not filtered_sources.empty and 'capacity_percent' in filtered_sources.columns else 0
     st.metric("Critical Sources", f"{critical}", delta_color="inverse")
 
 with col4:
-    sources_with_coords = len(filtered_sources[filtered_sources['latitude'].notna()]) if not filtered_sources.empty else 0
+    sources_with_coords = len(filtered_sources[filtered_sources['latitude'].notna()]) if not filtered_sources.empty and 'latitude' in filtered_sources.columns else 0
     st.metric("Sources on Map", f"{sources_with_coords}")
 
 with col5:
-    if not alerts.empty:
-        critical_alerts = len(alerts[alerts['alert_status'] == 'CRITICAL']) if 'alert_status' in alerts.columns else 0
+    if not alerts.empty and 'alert_status' in alerts.columns:
+        critical_alerts = len(alerts[alerts['alert_status'] == 'CRITICAL'])
         st.metric("Critical Alerts", f"{critical_alerts}", delta_color="inverse")
     else:
         st.metric("Active Alerts", "0", delta_color="inverse")
@@ -546,51 +547,55 @@ with tab1:
         
         # Show sample of all data
         with st.expander("📋 Show all sources sample"):
-            st.dataframe(sources[['source_name', 'source_type', 'state', 'district', 'capacity_percent']].head(20))
+            display_cols = ['source_name', 'source_type', 'state', 'district', 'capacity_percent']
+            available_display_cols = [col for col in display_cols if col in sources.columns]
+            st.dataframe(sources[available_display_cols].head(20))
     
     else:
         col1, col2 = st.columns(2)
         
         with col1:
             st.subheader("📊 Capacity Distribution")
-            fig = px.histogram(
-                filtered_sources,
-                x='capacity_percent',
-                nbins=20,
-                title=f"Storage Capacity Distribution ({len(filtered_sources)} sources)",
-                template="plotly_dark",
-                color_discrete_sequence=['#00e5ff']
-            )
-            fig.update_layout(
-                xaxis_title="Capacity (%)",
-                yaxis_title="Number of Sources"
-            )
-            st.plotly_chart(fig, use_container_width=True)
+            if 'capacity_percent' in filtered_sources.columns:
+                fig = px.histogram(
+                    filtered_sources,
+                    x='capacity_percent',
+                    nbins=20,
+                    title=f"Storage Capacity Distribution ({len(filtered_sources)} sources)",
+                    template="plotly_dark",
+                    color_discrete_sequence=['#00e5ff']
+                )
+                fig.update_layout(
+                    xaxis_title="Capacity (%)",
+                    yaxis_title="Number of Sources"
+                )
+                st.plotly_chart(fig, use_container_width=True)
         
         with col2:
             st.subheader("🏭 Source Types")
-            type_counts = filtered_sources['source_type'].value_counts().reset_index()
-            type_counts.columns = ['Source Type', 'Count']
-            fig = px.pie(
-                type_counts,
-                values='Count',
-                names='Source Type',
-                title=f"Water Sources by Type",
-                template="plotly_dark",
-                color_discrete_sequence=px.colors.sequential.Tealgrn
-            )
-            fig.update_traces(textposition='inside', textinfo='percent+label')
-            st.plotly_chart(fig, use_container_width=True)
+            if 'source_type' in filtered_sources.columns:
+                type_counts = filtered_sources['source_type'].value_counts().reset_index()
+                type_counts.columns = ['Source Type', 'Count']
+                fig = px.pie(
+                    type_counts,
+                    values='Count',
+                    names='Source Type',
+                    title=f"Water Sources by Type",
+                    template="plotly_dark",
+                    color_discrete_sequence=px.colors.sequential.Tealgrn
+                )
+                fig.update_traces(textposition='inside', textinfo='percent+label')
+                st.plotly_chart(fig, use_container_width=True)
         
         # Second row
         col1, col2 = st.columns(2)
         
         with col1:
             st.subheader("📈 Groundwater Stress Levels")
-            if not groundwater.empty:
+            if not groundwater.empty and 'stress_level' in groundwater.columns:
                 # Filter groundwater based on selected district if applicable
                 filtered_gw = groundwater.copy()
-                if selected_district != "All Districts":
+                if selected_district != "All Districts" and 'district_name' in filtered_gw.columns:
                     filtered_gw = filtered_gw[filtered_gw['district_name'] == selected_district]
                 
                 stress_counts = filtered_gw['stress_level'].value_counts().reset_index()
@@ -615,10 +620,10 @@ with tab1:
         
         with col2:
             st.subheader("☔ Rainfall by Season")
-            if not rainfall.empty:
+            if not rainfall.empty and 'season' in rainfall.columns and 'rainfall_cm' in rainfall.columns:
                 # Filter rainfall based on selected district if applicable
                 filtered_rain = rainfall.copy()
-                if selected_district != "All Districts":
+                if selected_district != "All Districts" and 'district_name' in filtered_rain.columns:
                     filtered_rain = filtered_rain[filtered_rain['district_name'] == selected_district]
                 
                 season_rain = filtered_rain.groupby('season')['rainfall_cm'].mean().reset_index()
@@ -638,28 +643,29 @@ with tab1:
                 st.info("ℹ️ No rainfall data available")
         
         # Third row - Risk distribution
-        st.subheader("⚠️ Risk Distribution")
-        risk_counts = filtered_sources['risk_level'].value_counts().reset_index()
-        risk_counts.columns = ['Risk Level', 'Count']
-        
-        fig = px.bar(
-            risk_counts,
-            x='Risk Level',
-            y='Count',
-            color='Risk Level',
-            color_discrete_map={
-                'Good': '#00ff9d',
-                'Moderate': '#ffd700',
-                'Critical': '#ff4444'
-            },
-            title="Infrastructure Risk Assessment",
-            template="plotly_dark",
-            text_auto=True
-        )
-        st.plotly_chart(fig, use_container_width=True)
+        if 'risk_level' in filtered_sources.columns:
+            st.subheader("⚠️ Risk Distribution")
+            risk_counts = filtered_sources['risk_level'].value_counts().reset_index()
+            risk_counts.columns = ['Risk Level', 'Count']
+            
+            fig = px.bar(
+                risk_counts,
+                x='Risk Level',
+                y='Count',
+                color='Risk Level',
+                color_discrete_map={
+                    'Good': '#00ff9d',
+                    'Moderate': '#ffd700',
+                    'Critical': '#ff4444'
+                },
+                title="Infrastructure Risk Assessment",
+                template="plotly_dark",
+                text_auto=True
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
 # =====================
-# TAB 2: MAP VIEW (FILTERED SOURCES ONLY)
+# TAB 2: MAP VIEW
 # =====================
 
 with tab2:
@@ -685,26 +691,20 @@ with tab2:
     }
     
     # 2. Create map centered on India or selected region
-    if not filtered_sources.empty and selected_district != "All Districts":
-        # Center on selected district if possible
-        district_sources = filtered_sources[filtered_sources['latitude'].notna()]
-        if not district_sources.empty:
-            center_lat = district_sources['latitude'].mean()
-            center_lon = district_sources['longitude'].mean()
-            zoom = 9
-        else:
-            center_lat, center_lon, zoom = 20.5937, 78.9629, 5
-    elif not filtered_sources.empty and selected_state != "All States":
-        # Center on selected state
-        state_sources = filtered_sources[filtered_sources['latitude'].notna()]
-        if not state_sources.empty:
-            center_lat = state_sources['latitude'].mean()
-            center_lon = state_sources['longitude'].mean()
-            zoom = 7
-        else:
-            center_lat, center_lon, zoom = 20.5937, 78.9629, 5
-    else:
-        center_lat, center_lon, zoom = 20.5937, 78.9629, 5
+    center_lat, center_lon, zoom = 20.5937, 78.9629, 5
+    
+    if not filtered_sources.empty and 'latitude' in filtered_sources.columns and 'longitude' in filtered_sources.columns:
+        sources_with_coords = filtered_sources[filtered_sources['latitude'].notna() & filtered_sources['longitude'].notna()]
+        
+        if not sources_with_coords.empty:
+            if selected_district != "All Districts":
+                center_lat = sources_with_coords['latitude'].mean()
+                center_lon = sources_with_coords['longitude'].mean()
+                zoom = 9
+            elif selected_state != "All States":
+                center_lat = sources_with_coords['latitude'].mean()
+                center_lon = sources_with_coords['longitude'].mean()
+                zoom = 7
     
     m = folium.Map(
         location=[center_lat, center_lon],
@@ -726,153 +726,160 @@ with tab2:
     sources_on_map = 0
     
     # 4. Process ONLY filtered water sources with coordinates
-    sources_with_coords = filtered_sources[
-        filtered_sources['latitude'].notna() & 
-        filtered_sources['longitude'].notna()
-    ]
-    
-    if not sources_with_coords.empty:
-        for _, source in sources_with_coords.iterrows():
-            # Determine color and risk text based on capacity
-            if source['capacity_percent'] < 30:
-                color = '#ff4444'  # Critical
-                risk_text = "CRITICAL"
-                status_icon = "🔴"
-            elif source['capacity_percent'] < 60:
-                color = '#ffd700'  # Moderate
-                risk_text = "MODERATE"
-                status_icon = "🟡"
-            else:
-                color = '#00ff9d'  # Good
-                risk_text = "GOOD"
-                status_icon = "🟢"
-            
-            heat_data.append([source['latitude'], source['longitude']])
-            sources_on_map += 1
-            
-            # Get alert info for this source if any
-            source_alerts = alerts[alerts['source_name'] == source['source_name']] if not alerts.empty else pd.DataFrame()
-            alert_info = ""
-            if not source_alerts.empty:
-                latest_alert = source_alerts.iloc[-1]
-                alert_info = f"""
-                <tr>
-                    <td colspan="2" style="padding-top: 10px;">
-                        <div style="background: rgba(255,0,0,0.1); padding: 5px; border-radius: 5px;">
-                            <b>⚠️ Active Alert:</b> {latest_alert.get('alert_reason', 'Unknown')}<br>
-                            <small>Status: {latest_alert.get('alert_status', 'Unknown')}</small>
-                        </div>
-                    </td>
-                </tr>
-                """
-            
-            popup_html = f"""
-            <div style="font-family: Arial; min-width: 300px; background: #0a0f1e; color: white; padding: 15px; border-radius: 10px; border-left: 5px solid {color};">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <h4 style="color: {color}; margin:0;">{status_icon} {source['source_name']}</h4>
-                    <span style="background: {color}; color: black; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold;">{risk_text}</span>
-                </div>
-                <hr style="margin:10px 0; border-color: #1f2937;">
-                <table style="width:100%; border-collapse: collapse;">
-                    <tr><td style="padding: 5px 0;"><b>📍 Type:</b></td><td>{source['source_type']}</td></tr>
-                    <tr><td style="padding: 5px 0;"><b>🏛️ District:</b></td><td>{source['district']}</td></tr>
-                    <tr><td style="padding: 5px 0;"><b>🗺️ State:</b></td><td>{source['state']}</td></tr>
-                    <tr><td style="padding: 5px 0;"><b>📊 Capacity:</b></td>
-                        <td>
-                            {source['capacity_percent']:.1f}%
-                            <div style="background: #1f2937; height: 6px; width: 100px; border-radius: 3px; margin-top: 3px;">
-                                <div style="background: {color}; width: {source['capacity_percent']}%; height: 6px; border-radius: 3px;"></div>
+    if not filtered_sources.empty and 'latitude' in filtered_sources.columns and 'longitude' in filtered_sources.columns:
+        sources_with_coords = filtered_sources[
+            filtered_sources['latitude'].notna() & 
+            filtered_sources['longitude'].notna()
+        ]
+        
+        if not sources_with_coords.empty:
+            for _, source in sources_with_coords.iterrows():
+                # Determine color and risk text based on capacity
+                capacity = source.get('capacity_percent', 50)
+                if pd.notna(capacity) and capacity < 30:
+                    color = '#ff4444'  # Critical
+                    risk_text = "CRITICAL"
+                    status_icon = "🔴"
+                elif pd.notna(capacity) and capacity < 60:
+                    color = '#ffd700'  # Moderate
+                    risk_text = "MODERATE"
+                    status_icon = "🟡"
+                else:
+                    color = '#00ff9d'  # Good
+                    risk_text = "GOOD"
+                    status_icon = "🟢"
+                
+                heat_data.append([source['latitude'], source['longitude']])
+                sources_on_map += 1
+                
+                # Get alert info for this source if any
+                source_alerts = alerts[alerts['source_name'] == source['source_name']] if not alerts.empty and 'source_name' in alerts.columns else pd.DataFrame()
+                alert_info = ""
+                if not source_alerts.empty:
+                    latest_alert = source_alerts.iloc[-1]
+                    alert_info = f"""
+                    <tr>
+                        <td colspan="2" style="padding-top: 10px;">
+                            <div style="background: rgba(255,0,0,0.1); padding: 5px; border-radius: 5px;">
+                                <b>⚠️ Active Alert:</b> {latest_alert.get('alert_reason', 'Unknown')}<br>
+                                <small>Status: {latest_alert.get('alert_status', 'Unknown')}</small>
                             </div>
                         </td>
                     </tr>
-                    <tr><td style="padding: 5px 0;"><b>📅 Age:</b></td><td>{source['age']:.0f} years</td></tr>
-                    <tr><td style="padding: 5px 0;"><b>💯 Health Score:</b></td><td>{source['health_score']:.1f}%</td></tr>
-                    <tr><td style="padding: 5px 0;"><b>🏭 Build Year:</b></td><td>{source['build_year']:.0f}</td></tr>
-                    {alert_info}
-                </table>
-                <div style="margin-top: 10px; font-size: 0.8rem; color: #8892b0; text-align: center;">
-                    Click to view details | Last updated: {datetime.now().strftime('%H:%M:%S')}
+                    """
+                
+                popup_html = f"""
+                <div style="font-family: Arial; min-width: 300px; background: #0a0f1e; color: white; padding: 15px; border-radius: 10px; border-left: 5px solid {color};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="color: {color}; margin:0;">{status_icon} {source.get('source_name', 'Unknown')}</h4>
+                        <span style="background: {color}; color: black; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold;">{risk_text}</span>
+                    </div>
+                    <hr style="margin:10px 0; border-color: #1f2937;">
+                    <table style="width:100%; border-collapse: collapse;">
+                        <tr><td style="padding: 5px 0;"><b>📍 Type:</b></td><td>{source.get('source_type', 'Unknown')}</td></tr>
+                        <tr><td style="padding: 5px 0;"><b>🏛️ District:</b></td><td>{source.get('district', 'Unknown')}</td></tr>
+                        <tr><td style="padding: 5px 0;"><b>🗺️ State:</b></td><td>{source.get('state', 'Unknown')}</td></tr>
+                        <tr><td style="padding: 5px 0;"><b>📊 Capacity:</b></td>
+                            <td>
+                                {capacity:.1f}%
+                                <div style="background: #1f2937; height: 6px; width: 100px; border-radius: 3px; margin-top: 3px;">
+                                    <div style="background: {color}; width: {capacity}%; height: 6px; border-radius: 3px;"></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr><td style="padding: 5px 0;"><b>📅 Age:</b></td><td>{source.get('age', 0):.0f} years</td></tr>
+                        <tr><td style="padding: 5px 0;"><b>💯 Health Score:</b></td><td>{source.get('health_score', 0):.1f}%</td></tr>
+                        <tr><td style="padding: 5px 0;"><b>🏭 Build Year:</b></td><td>{source.get('build_year', 0):.0f}</td></tr>
+                        {alert_info}
+                    </table>
+                    <div style="margin-top: 10px; font-size: 0.8rem; color: #8892b0; text-align: center;">
+                        Click to view details | Last updated: {datetime.now().strftime('%H:%M:%S')}
+                    </div>
                 </div>
-            </div>
-            """
+                """
+                
+                # Enhanced tooltip with more info
+                tooltip_text = f"{source.get('source_name', 'Unknown')} | {capacity:.0f}% capacity | {risk_text}"
+                
+                # Create circle marker
+                marker = folium.CircleMarker(
+                    location=[source['latitude'], source['longitude']],
+                    radius=marker_size + (3 if pd.notna(capacity) and capacity < 30 else 0),
+                    color=color,
+                    fill=True,
+                    fillOpacity=0.7,
+                    popup=folium.Popup(popup_html, max_width=350),
+                    tooltip=tooltip_text
+                )
+                
+                if show_clusters and len(filtered_sources) > 10:
+                    marker.add_to(marker_cluster)
+                else:
+                    marker.add_to(m)
             
-            # Enhanced tooltip with more info
-            tooltip_text = f"{source['source_name']} | {source['capacity_percent']:.0f}% capacity | {risk_text}"
-            
-            # Create circle marker
-            marker = folium.CircleMarker(
-                location=[source['latitude'], source['longitude']],
-                radius=marker_size + (3 if source['capacity_percent'] < 30 else 0),
-                color=color,
-                fill=True,
-                fillOpacity=0.7,
-                popup=folium.Popup(popup_html, max_width=350),
-                tooltip=tooltip_text
-            )
-            
-            if show_clusters and len(filtered_sources) > 10:
-                marker.add_to(marker_cluster)
-            else:
-                marker.add_to(m)
-        
-        # 5. Add heatmap if enabled (only for filtered sources)
-        if show_heatmap and heat_data:
-            HeatMap(
-                heat_data,
-                radius=15,
-                blur=10,
-                gradient={0.2: 'blue', 0.4: 'cyan', 0.6: 'lime', 0.8: 'yellow', 1: 'red'}
-            ).add_to(m)
+            # 5. Add heatmap if enabled
+            if show_heatmap and heat_data:
+                HeatMap(
+                    heat_data,
+                    radius=15,
+                    blur=10,
+                    gradient={0.2: 'blue', 0.4: 'cyan', 0.6: 'lime', 0.8: 'yellow', 1: 'red'}
+                ).add_to(m)
     
-    # 6. Add monitoring stations if enabled (filtered by geographic selections)
+    # 6. Add monitoring stations if enabled
     if show_stations and not filtered_stations.empty:
-        stations_with_coords = filtered_stations[
-            filtered_stations['latitude'].notna() & 
-            filtered_stations['longitude'].notna()
-        ]
-        for _, station in stations_with_coords.iterrows():
-            # Color based on status
-            if station['status'] == 'Active':
-                station_color = 'green'
-                status_icon = "✅"
-            elif station['status'] == 'Maintenance':
-                station_color = 'orange'
-                status_icon = "🔄"
-            else:
-                station_color = 'red'
-                status_icon = "⚠️"
-            
-            # Get water quality status
-            water_quality = "Good"
-            quality_color = "#00ff9d"
-            if station['ph_level'] < 6.5 or station['ph_level'] > 8.5:
-                water_quality = "Poor"
-                quality_color = "#ff4444"
-            elif station['dissolved_oxygen_mg_l'] < 4:
-                water_quality = "Fair"
-                quality_color = "#ffd700"
-            
-            station_popup = f"""
-            <div style="font-family: Arial; min-width: 280px; background: #0a0f1e; color: white; padding: 15px; border-radius: 10px; border-left: 5px solid {station_color};">
-                <h4 style="margin:0 0 10px 0; color: white;">{status_icon} {station['station_name']}</h4>
-                <hr style="margin:10px 0; border-color: #1f2937;">
-                <table style="width:100%; border-collapse: collapse;">
-                    <tr><td><b>📍 District:</b></td><td>{station['district_name']}</td></tr>
-                    <tr><td><b>📊 Status:</b></td><td><span style="color: {station_color};">{station['status']}</span></td></tr>
-                    <tr><td><b>🧪 pH Level:</b></td><td>{station['ph_level']}</td></tr>
-                    <tr><td><b>💨 DO (mg/L):</b></td><td>{station['dissolved_oxygen_mg_l']}</td></tr>
-                    <tr><td><b>🌫️ Turbidity (NTU):</b></td><td>{station['turbidity_ntu']}</td></tr>
-                    <tr><td><b>💧 Quality:</b></td><td><span style="color: {quality_color};">{water_quality}</span></td></tr>
-                </table>
-            </div>
-            """
-            
-            folium.Marker(
-                location=[station['latitude'], station['longitude']],
-                icon=folium.Icon(color=station_color, icon='info-sign', prefix='glyphicon'),
-                popup=folium.Popup(station_popup, max_width=300),
-                tooltip=f"Station: {station['station_name']} | {station['status']}"
-            ).add_to(m)
+        if 'latitude' in filtered_stations.columns and 'longitude' in filtered_stations.columns:
+            stations_with_coords = filtered_stations[
+                filtered_stations['latitude'].notna() & 
+                filtered_stations['longitude'].notna()
+            ]
+            for _, station in stations_with_coords.iterrows():
+                # Color based on status
+                status = station.get('status', 'Unknown')
+                if status == 'Active':
+                    station_color = 'green'
+                    status_icon = "✅"
+                elif status == 'Maintenance':
+                    station_color = 'orange'
+                    status_icon = "🔄"
+                else:
+                    station_color = 'red'
+                    status_icon = "⚠️"
+                
+                # Get water quality status
+                water_quality = "Good"
+                quality_color = "#00ff9d"
+                ph = station.get('ph_level', 7)
+                do = station.get('dissolved_oxygen_mg_l', 5)
+                
+                if pd.notna(ph) and (ph < 6.5 or ph > 8.5):
+                    water_quality = "Poor"
+                    quality_color = "#ff4444"
+                elif pd.notna(do) and do < 4:
+                    water_quality = "Fair"
+                    quality_color = "#ffd700"
+                
+                station_popup = f"""
+                <div style="font-family: Arial; min-width: 280px; background: #0a0f1e; color: white; padding: 15px; border-radius: 10px; border-left: 5px solid {station_color};">
+                    <h4 style="margin:0 0 10px 0; color: white;">{status_icon} {station.get('station_name', 'Unknown')}</h4>
+                    <hr style="margin:10px 0; border-color: #1f2937;">
+                    <table style="width:100%; border-collapse: collapse;">
+                        <tr><td><b>📍 District:</b></td><td>{station.get('district_name', 'Unknown')}</td></tr>
+                                                <tr><td><b>📊 Status:</b></td><td><span style="color: {station_color};">{status}</span></td></tr>
+                        <tr><td><b>🧪 pH Level:</b></td><td>{station.get('ph_level', 'N/A')}</td></tr>
+                        <tr><td><b>💨 DO (mg/L):</b></td><td>{station.get('dissolved_oxygen_mg_l', 'N/A')}</td></tr>
+                        <tr><td><b>🌫️ Turbidity (NTU):</b></td><td>{station.get('turbidity_ntu', 'N/A')}</td></tr>
+                        <tr><td><b>💧 Quality:</b></td><td><span style="color: {quality_color};">{water_quality}</span></td></tr>
+                    </table>
+                </div>
+                """
+                
+                folium.Marker(
+                    location=[station['latitude'], station['longitude']],
+                    icon=folium.Icon(color=station_color, icon='info-sign', prefix='glyphicon'),
+                    popup=folium.Popup(station_popup, max_width=300),
+                    tooltip=f"Station: {station.get('station_name', 'Unknown')} | {status}"
+                ).add_to(m)
     
     # 7. Display map
     st_folium(m, width=1300, height=600)
@@ -916,10 +923,10 @@ with tab3:
         
         with col1:
             st.subheader("Rainfall Trend")
-            if not rainfall.empty:
+            if not rainfall.empty and 'record_year' in rainfall.columns and 'rainfall_cm' in rainfall.columns:
                 # Filter rainfall based on selected district if applicable
                 filtered_rain = rainfall.copy()
-                if selected_district != "All Districts":
+                if selected_district != "All Districts" and 'district_name' in filtered_rain.columns:
                     filtered_rain = filtered_rain[filtered_rain['district_name'] == selected_district]
                 
                 rain_trend = filtered_rain.groupby('record_year')['rainfall_cm'].mean().reset_index()
@@ -938,10 +945,10 @@ with tab3:
         
         with col2:
             st.subheader("Groundwater Trend")
-            if not groundwater.empty and 'assessment_year' in groundwater.columns:
+            if not groundwater.empty and 'assessment_year' in groundwater.columns and 'avg_depth_meters' in groundwater.columns:
                 # Filter groundwater based on selected district if applicable
                 filtered_gw = groundwater.copy()
-                if selected_district != "All Districts":
+                if selected_district != "All Districts" and 'district_name' in filtered_gw.columns:
                     filtered_gw = filtered_gw[filtered_gw['district_name'] == selected_district]
                 
                 gw_trend = filtered_gw.groupby('assessment_year')['avg_depth_meters'].mean().reset_index()
@@ -963,7 +970,7 @@ with tab3:
         
         with col1:
             st.subheader("Capacity by State")
-            if not filtered_sources.empty and 'state' in filtered_sources.columns:
+            if not filtered_sources.empty and 'state' in filtered_sources.columns and 'capacity_percent' in filtered_sources.columns:
                 state_cap = filtered_sources.groupby('state')['capacity_percent'].mean().sort_values(ascending=False)
                 if len(state_cap) > 10:
                     state_cap = state_cap.head(10)
@@ -985,18 +992,18 @@ with tab3:
         
         with col2:
             st.subheader("Extraction vs Recharge")
-            if not groundwater.empty:
+            if not groundwater.empty and 'recharge_rate_mcm' in groundwater.columns and 'extraction_pct' in groundwater.columns:
                 # Filter groundwater based on selected district if applicable
                 filtered_gw = groundwater.copy()
-                if selected_district != "All Districts":
+                if selected_district != "All Districts" and 'district_name' in filtered_gw.columns:
                     filtered_gw = filtered_gw[filtered_gw['district_name'] == selected_district]
                 
                 fig = px.scatter(
                     filtered_gw,
                     x='recharge_rate_mcm',
                     y='extraction_pct',
-                    size='avg_depth_meters',
-                    color='district_name',
+                    size='avg_depth_meters' if 'avg_depth_meters' in filtered_gw.columns else None,
+                    color='district_name' if 'district_name' in filtered_gw.columns else None,
                     title="Groundwater Extraction vs Recharge Rate",
                     template="plotly_dark",
                     labels={
@@ -1015,43 +1022,65 @@ with tab3:
         with col1:
             st.subheader("Statistical Summary")
             if not filtered_sources.empty:
-                stats_df = filtered_sources[['capacity_percent', 'age', 'health_score']].describe()
-                st.dataframe(stats_df.style.format("{:.2f}"), use_container_width=True)
+                stats_cols = []
+                if 'capacity_percent' in filtered_sources.columns:
+                    stats_cols.append('capacity_percent')
+                if 'age' in filtered_sources.columns:
+                    stats_cols.append('age')
+                if 'health_score' in filtered_sources.columns:
+                    stats_cols.append('health_score')
+                
+                if stats_cols:
+                    stats_df = filtered_sources[stats_cols].describe()
+                    st.dataframe(stats_df.style.format("{:.2f}"), use_container_width=True)
+                else:
+                    st.info("No numerical data available")
             else:
                 st.info("No source data available")
         
         with col2:
             st.subheader("Correlation Matrix")
             if not filtered_sources.empty and not groundwater.empty:
-                # Merge for correlation
-                merged = filtered_sources.merge(
-                    groundwater,
-                    left_on='district',
-                    right_on='district_name',
-                    how='inner'
-                )
-                
-                if not merged.empty:
-                    numeric_cols = ['capacity_percent', 'age', 'avg_depth_meters', 'extraction_pct', 'recharge_rate_mcm']
-                    corr_data = merged[numeric_cols].dropna()
+                # Check if we have the necessary columns for merging
+                if 'district' in filtered_sources.columns and 'district_name' in groundwater.columns:
+                    # Merge for correlation
+                    merged = filtered_sources.merge(
+                        groundwater,
+                        left_on='district',
+                        right_on='district_name',
+                        how='inner'
+                    )
                     
-                    if not corr_data.empty:
-                        corr_matrix = corr_data.corr()
+                    if not merged.empty:
+                        numeric_cols = []
+                        for col in ['capacity_percent', 'age', 'avg_depth_meters', 'extraction_pct', 'recharge_rate_mcm']:
+                            if col in merged.columns:
+                                numeric_cols.append(col)
                         
-                        fig = px.imshow(
-                            corr_matrix,
-                            text_auto=True,
-                            aspect="auto",
-                            title="Feature Correlation Matrix",
-                            template="plotly_dark",
-                            color_continuous_scale='RdBu_r',
-                            labels=dict(color="Correlation")
-                        )
-                        st.plotly_chart(fig, use_container_width=True)
+                        if len(numeric_cols) >= 2:
+                            corr_data = merged[numeric_cols].dropna()
+                            
+                            if not corr_data.empty:
+                                corr_matrix = corr_data.corr()
+                                
+                                fig = px.imshow(
+                                    corr_matrix,
+                                    text_auto=True,
+                                    aspect="auto",
+                                    title="Feature Correlation Matrix",
+                                    template="plotly_dark",
+                                    color_continuous_scale='RdBu_r',
+                                    labels=dict(color="Correlation")
+                                )
+                                st.plotly_chart(fig, use_container_width=True)
+                            else:
+                                st.info("Insufficient data for correlation")
+                        else:
+                            st.info("Not enough numerical columns for correlation")
                     else:
-                        st.info("Insufficient data for correlation")
+                        st.info("No matching data for correlation")
                 else:
-                    st.info("No matching data for correlation")
+                    st.info("Cannot merge data - missing district columns")
             else:
                 st.info("Insufficient data for correlation")
 
@@ -1062,11 +1091,11 @@ with tab3:
 with tab4:
     st.subheader("🚨 Active Alerts and Warnings")
     
-    if not alerts.empty:
+    if not alerts.empty and 'alert_status' in alerts.columns:
         # FIRST, MERGE ALERTS WITH SOURCES TO GET PROPER LOCATION INFO
         alerts_with_source = alerts.copy()
         
-        if not sources.empty and 'source_name' in sources.columns:
+        if not sources.empty and 'source_name' in sources.columns and 'source_name' in alerts.columns:
             # Get only needed columns from sources
             source_cols = ['source_name', 'source_type', 'district', 'state']
             available_source_cols = [col for col in source_cols if col in sources.columns]
@@ -1194,9 +1223,9 @@ with tab4:
                     
                     <div style="display: flex; gap: 30px; flex-wrap: wrap;">
                         <div style="flex: 1; min-width: 200px;">
-                            <p><strong>📊 Current Capacity:</strong> {alert['capacity_percent']}%</p>
+                            <p><strong>📊 Current Capacity:</strong> {alert.get('capacity_percent', 'N/A')}%</p>
                             <div style="background: #1f2937; height: 10px; width: 100%; border-radius: 5px;">
-                                <div style="background: {border_color}; width: {alert['capacity_percent']}%; height: 10px; border-radius: 5px;"></div>
+                                <div style="background: {border_color}; width: {alert.get('capacity_percent', 0)}%; height: 10px; border-radius: 5px;"></div>
                             </div>
                         </div>
                         <div>
@@ -1504,7 +1533,7 @@ with tab5:
         display_alerts = alerts.copy()
         
         # Merge with sources to get location info for display
-        if not sources.empty and 'source_name' in sources.columns:
+        if not sources.empty and 'source_name' in sources.columns and 'source_name' in display_alerts.columns:
             source_cols = ['source_name', 'source_type', 'district', 'state']
             available_source_cols = [col for col in source_cols if col in sources.columns]
             
@@ -1622,6 +1651,8 @@ with tab5:
 # =====================
 
 with st.sidebar.expander("📊 Current Filter Summary", expanded=False):
+    sources_on_map_count = len(filtered_sources[filtered_sources['latitude'].notna()]) if not filtered_sources.empty and 'latitude' in filtered_sources.columns else 0
+    
     st.markdown(f"""
     **Time Range:** {year_range[0]} - {year_range[1]}
     
@@ -1636,7 +1667,7 @@ with st.sidebar.expander("📊 Current Filter Summary", expanded=False):
     
     **Results:**
     - Sources: {len(filtered_sources)} of {len(sources)}
-    - On Map: {len(filtered_sources[filtered_sources['latitude'].notna()]) if not filtered_sources.empty else 0}
+    - On Map: {sources_on_map_count}
     """)
 
 # =====================
@@ -1648,12 +1679,32 @@ if st.sidebar.button("📦 Export All Filtered Data", use_container_width=True):
     # Create a dictionary of all filtered datasets
     export_data = {
         'water_sources': filtered_sources,
-        'monitoring_stations': filtered_stations,
-        'groundwater': groundwater[groundwater['district_name'].isin(filtered_sources['district'].unique())] if not filtered_sources.empty and 'district_name' in groundwater.columns and 'district' in filtered_sources.columns else pd.DataFrame(),
-        'rainfall': rainfall[rainfall['district_name'].isin(filtered_sources['district'].unique())] if not filtered_sources.empty and 'district_name' in rainfall.columns and 'district' in filtered_sources.columns else pd.DataFrame(),
-        'usage': usage[usage['source_id'].isin(filtered_sources['source_id'])] if not filtered_sources.empty and 'source_id' in usage.columns and 'source_id' in filtered_sources.columns else pd.DataFrame(),
-        'alerts': alerts[alerts['source_name'].isin(filtered_sources['source_name'])] if not filtered_sources.empty and 'source_name' in alerts.columns and 'source_name' in filtered_sources.columns else pd.DataFrame()
+        'monitoring_stations': filtered_stations
     }
+    
+    # Add groundwater if applicable
+    if not filtered_sources.empty and 'district' in filtered_sources.columns and 'district_name' in groundwater.columns:
+        export_data['groundwater'] = groundwater[groundwater['district_name'].isin(filtered_sources['district'].unique())]
+    else:
+        export_data['groundwater'] = pd.DataFrame()
+    
+    # Add rainfall if applicable
+    if not filtered_sources.empty and 'district' in filtered_sources.columns and 'district_name' in rainfall.columns:
+        export_data['rainfall'] = rainfall[rainfall['district_name'].isin(filtered_sources['district'].unique())]
+    else:
+        export_data['rainfall'] = pd.DataFrame()
+    
+        # Add usage if applicable
+    if not filtered_sources.empty and 'source_name' in filtered_sources.columns and 'source_name' in usage.columns:
+        export_data['usage'] = usage[usage['source_name'].isin(filtered_sources['source_name'])]
+    else:
+        export_data['usage'] = pd.DataFrame()
+    
+    # Add alerts if applicable
+    if not filtered_sources.empty and 'source_name' in filtered_sources.columns and 'source_name' in alerts.columns:
+        export_data['alerts'] = alerts[alerts['source_name'].isin(filtered_sources['source_name'])]
+    else:
+        export_data['alerts'] = pd.DataFrame()
     
     # Create Excel file with multiple sheets
     output = BytesIO()
@@ -1706,4 +1757,3 @@ st.markdown("""
     🔄 Data refreshes every 5 minutes
 </div>
 """, unsafe_allow_html=True)
-
