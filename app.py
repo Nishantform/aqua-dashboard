@@ -199,7 +199,7 @@ st.sidebar.markdown("### Geographic Filters")
 
 selected_state = "All States"
 if not sources.empty and 'state' in sources.columns:
-    states = ['🌍 All States'] + [f"📍 {state_opt}" for state_opt in sorted(sources['state'].dropna().unique().tolist())]
+    states = ['🌍 All States'] + [f"📍 {s}" for s in sorted(sources['state'].dropna().unique().tolist())]
     selected_state_display = st.sidebar.selectbox("State", states, index=0)
     selected_state = selected_state_display.replace("📍 ", "").replace("🌍 All States", "All States")
 
@@ -208,7 +208,7 @@ if not sources.empty and 'district' in sources.columns:
     dbase = sources[sources['state'] == selected_state] if selected_state != "All States" else sources
     dists = sorted(dbase['district'].dropna().unique().tolist())
     if dists:
-        districts = ['🏙️ All Districts'] + [f"🏘️ {dist}" for dist in dists]
+        districts = ['🏙️ All Districts'] + [f"🏘️ {d}" for d in dists]
         selected_district_display = st.sidebar.selectbox("District", districts, index=0)
         selected_district = selected_district_display.replace("🏘️ ", "").replace("🏙️ All Districts", "All Districts")
 
@@ -221,7 +221,7 @@ if not sources.empty and 'source_type' in sources.columns:
         'Dam': '🏭 Dam', 'Reservoir': '🌊 Reservoir', 'River': '🌊 River',
         'Canal': '🛣️ Canal', 'Lake': '🏞️ Lake', 'Pond': '💧 Pond', 'Well': '🕳️ Well'
     }
-    stypes = ['💧 All Types'] + [type_symbols.get(stype_opt, f"💧 {stype_opt}") for stype_opt in sorted(sources['source_type'].dropna().unique().tolist())]
+    stypes = ['💧 All Types'] + [type_symbols.get(t, f"💧 {t}") for t in sorted(sources['source_type'].dropna().unique().tolist())]
     selected_type_display = st.sidebar.selectbox("Source Type", stypes, index=0)
     selected_type = selected_type_display.replace("🏭 ", "").replace("🌊 ", "").replace("🛣️ ", "").replace("🏞️ ", "").replace("💧 ", "").replace("🕳️ ", "").replace("All Types", "All Types")
 
@@ -265,18 +265,18 @@ if is_admin:
                     st.subheader("Add New Water Source")
                     col1, col2 = st.columns(2)
                     with col1:
-                        source_name = st.text_input("Source Name *")
-                        source_type = st.selectbox("Source Type", ["Dam", "Reservoir", "River", "Canal", "Lake", "Pond", "Well"])
-                        capacity_percent = st.number_input("Capacity %", 0.0, 100.0, 75.0)
-                        max_capacity_mcm = st.number_input("Max Capacity (MCM)", 0.0, 10000.0, 100.0)
+                        source_name       = st.text_input("Source Name *")
+                        source_type       = st.selectbox("Source Type", ["Dam", "Reservoir", "River", "Canal", "Lake", "Pond", "Well"])
+                        capacity_percent  = st.number_input("Capacity %", 0.0, 100.0, 75.0)
+                        max_capacity_mcm  = st.number_input("Max Capacity (MCM)", 0.0, 10000.0, 100.0)
                         current_level_mcm = st.number_input("Current Level (MCM)", 0.0, 10000.0, 75.0)
                     with col2:
-                        build_year = st.number_input("Build Year", 1900, 2025, 2020)
-                        state_val = st.text_input("State *")
-                        district_val = st.text_input("District *")
+                        build_year       = st.number_input("Build Year", 1900, 2025, 2020)
+                        state_val        = st.text_input("State *")
+                        district_val     = st.text_input("District *")
                         is_transboundary = st.checkbox("Is Transboundary")
-                        latitude = st.number_input("Latitude", -90.0, 90.0, 20.0)
-                        longitude = st.number_input("Longitude", -180.0, 180.0, 78.0)
+                        latitude         = st.number_input("Latitude", -90.0, 90.0, 20.0)
+                        longitude        = st.number_input("Longitude", -180.0, 180.0, 78.0)
                     submitted = st.form_submit_button("➕ Add Source", use_container_width=True)
                     if submitted:
                         if not source_name or not state_val or not district_val:
@@ -305,17 +305,17 @@ if is_admin:
                     st.subheader("Add New Monitoring Station")
                     col1, col2 = st.columns(2)
                     with col1:
-                        station_name = st.text_input("Station Name *")
-                        state_name = st.text_input("State *")
+                        station_name  = st.text_input("Station Name *")
+                        state_name    = st.text_input("State *")
                         district_name = st.text_input("District *")
-                        latitude = st.number_input("Latitude", -90.0, 90.0, 20.0)
-                        longitude = st.number_input("Longitude", -180.0, 180.0, 78.0)
+                        latitude      = st.number_input("Latitude", -90.0, 90.0, 20.0)
+                        longitude     = st.number_input("Longitude", -180.0, 180.0, 78.0)
                     with col2:
-                        ph_level = st.number_input("pH Level", 0.0, 14.0, 7.0)
+                        ph_level         = st.number_input("pH Level", 0.0, 14.0, 7.0)
                         dissolved_oxygen = st.number_input("Dissolved Oxygen (mg/L)", 0.0, 20.0, 5.0)
-                        turbidity = st.number_input("Turbidity (NTU)", 0.0, 100.0, 2.0)
-                        temperature = st.number_input("Temperature (°C)", -10.0, 50.0, 25.0)
-                        status = st.selectbox("Status", ["Active", "Maintenance", "Inactive"])
+                        turbidity        = st.number_input("Turbidity (NTU)", 0.0, 100.0, 2.0)
+                        temperature      = st.number_input("Temperature (°C)", -10.0, 50.0, 25.0)
+                        status           = st.selectbox("Status", ["Active", "Maintenance", "Inactive"])
                     submitted = st.form_submit_button("➕ Add Station", use_container_width=True)
                     if submitted:
                         if not station_name or not state_name or not district_name:
@@ -343,13 +343,13 @@ if is_admin:
                     st.subheader("Add Groundwater Level Data")
                     col1, col2 = st.columns(2)
                     with col1:
-                        district_name = st.text_input("District Name *")
-                        avg_depth = st.number_input("Average Depth (meters)", 0.0, 200.0, 30.0)
+                        district_name  = st.text_input("District Name *")
+                        avg_depth      = st.number_input("Average Depth (meters)", 0.0, 200.0, 30.0)
                         extraction_pct = st.number_input("Extraction %", 0.0, 100.0, 50.0)
                     with col2:
-                        recharge_rate = st.number_input("Recharge Rate (MCM)", 0.0, 1000.0, 100.0)
+                        recharge_rate   = st.number_input("Recharge Rate (MCM)", 0.0, 1000.0, 100.0)
                         assessment_year = st.number_input("Assessment Year", 2000, 2025, 2025)
-                        stress_level = st.selectbox("Stress Level", ["Low", "Moderate", "High"])
+                        stress_level    = st.selectbox("Stress Level", ["Low", "Moderate", "High"])
                     submitted = st.form_submit_button("➕ Add Data", use_container_width=True)
                     if submitted:
                         if not district_name:
@@ -378,13 +378,13 @@ if is_admin:
                 key="delete_table")
 
             file_map = {
-                "Water Sources": ("water_sources.csv", 'source_name', ['source_name','source_type','state','district','capacity_percent']),
+                "Water Sources":       ("water_sources.csv",             'source_name',  ['source_name','source_type','state','district','capacity_percent']),
                 "Monitoring Stations": ("water_monitoring_stations.csv", 'station_name', ['station_name','state_name','district_name','status']),
-                "Groundwater Levels": ("groundwater_levels.csv", 'district_name', ['district_name','assessment_year','avg_depth_meters','stress_level']),
-                "Rainfall History": ("rainfall_history.csv", 'district_name', ['district_name','record_year','season','rainfall_cm']),
-                "Water Usage": ("water_usage_history.csv", 'source_name', ['source_name','sector','consumer_name','consumption_mcm']),
-                "Active Alerts": ("active_alerts.csv", 'source_name', ['source_name','alert_status','alert_time','capacity_percent']),
-                "Regional Statistics": ("regional_stats.csv", 'region_name', ['region_name','population_count','annual_rainfall_avg_cm']),
+                "Groundwater Levels":  ("groundwater_levels.csv",        'district_name',['district_name','assessment_year','avg_depth_meters','stress_level']),
+                "Rainfall History":    ("rainfall_history.csv",          'district_name',['district_name','record_year','season','rainfall_cm']),
+                "Water Usage":         ("water_usage_history.csv",       'source_name',  ['source_name','sector','consumer_name','consumption_mcm']),
+                "Active Alerts":       ("active_alerts.csv",             'source_name',  ['source_name','alert_status','alert_time','capacity_percent']),
+                "Regional Statistics": ("regional_stats.csv",            'region_name',  ['region_name','population_count','annual_rainfall_avg_cm']),
             }
 
             fname, id_col, disp_cols = file_map[table_choice_del]
@@ -492,7 +492,7 @@ if selected_type != "All Types":
 st.markdown("---")
 
 # ═══════════════════════════════════════════
-# TABS  — defined ONCE
+# TABS
 # ═══════════════════════════════════════════
 if is_admin:
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["📊 DASHBOARD", "🗺️ MAP VIEW", "📈 ANALYTICS", "⚠️ ALERTS", "📋 DATA TABLES", "➕ ADD NEW RECORD"])
@@ -576,16 +576,16 @@ with tab2:
                 source_options = []
                 for _, row in filtered_sources.iterrows():
                     stype = row.get('source_type', 'Unknown')
-                    sym = {'Dam':'🏭','Reservoir':'🌊','River':'🌊','Canal':'🛣️','Lake':'🏞️','Pond':'💧','Well':'🕳️'}.get(stype, '💧')
-                    cap = row.get('capacity_percent', 50)
-                    rsym = '🔴' if (pd.notna(cap) and cap < 30) else ('🟡' if (pd.notna(cap) and cap < 60) else '🟢')
+                    sym   = {'Dam':'🏭','Reservoir':'🌊','River':'🌊','Canal':'🛣️','Lake':'🏞️','Pond':'💧','Well':'🕳️'}.get(stype, '💧')
+                    cap   = row.get('capacity_percent', 50)
+                    rsym  = '🔴' if (pd.notna(cap) and cap < 30) else ('🟡' if (pd.notna(cap) and cap < 60) else '🟢')
                     source_options.append({"display": f"{rsym} {sym} {row['source_name']} ({stype})", "value": row['source_name']})
 
                 if source_options:
                     col1, col2 = st.columns([3, 1])
                     with col1:
                         selected_display = st.selectbox("Choose source to delete:", [o["display"] for o in source_options], key="map_delete_select")
-                        selected_source = next((o["value"] for o in source_options if o["display"] == selected_display), None)
+                        selected_source  = next((o["value"] for o in source_options if o["display"] == selected_display), None)
                     with col2:
                         st.markdown("<br>", unsafe_allow_html=True)
                         delete_btn = st.button("🗑️ Delete", type="primary", use_container_width=True)
@@ -630,7 +630,7 @@ with tab2:
 
     style_map = {
         "Esri Satellite (Official)": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        "Dark Matter": "https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
+        "Dark Matter":  "https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
         "Light Matter": "https://cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png"
     }
 
@@ -641,12 +641,12 @@ with tab2:
             zoom = 9 if selected_district != "All Districts" else (7 if selected_state != "All States" else 5)
             center_lat, center_lon = swc['latitude'].mean(), swc['longitude'].mean()
 
-    m = folium.Map(location=[center_lat, center_lon], zoom_start=zoom,
-                   tiles=style_map[map_style], attr='AQUASTAT | Data: Esri, OSM')
+    m  = folium.Map(location=[center_lat, center_lon], zoom_start=zoom,
+                    tiles=style_map[map_style], attr='AQUASTAT | Data: Esri, OSM')
     Fullscreen().add_to(m)
     mc = MarkerCluster().add_to(m) if (show_clusters and len(filtered_sources) > 10) else m
 
-    heat_data = []
+    heat_data      = []
     sources_on_map = 0
 
     if not filtered_sources.empty and 'latitude' in filtered_sources.columns:
@@ -706,13 +706,13 @@ with tab2:
     if show_stations and not filtered_stations.empty and 'latitude' in filtered_stations.columns:
         for _, st_row in filtered_stations[filtered_stations['latitude'].notna() & filtered_stations['longitude'].notna()].iterrows():
             sts = st_row.get('status', 'Unknown')
-            sc = 'green' if sts == 'Active' else ('orange' if sts == 'Maintenance' else 'red')
-            si = '✅' if sts == 'Active' else ('🔄' if sts == 'Maintenance' else '⚠️')
+            sc  = 'green' if sts == 'Active' else ('orange' if sts == 'Maintenance' else 'red')
+            si  = '✅' if sts == 'Active' else ('🔄' if sts == 'Maintenance' else '⚠️')
             sph = st_row.get('ph_level', 7)
             sdo = st_row.get('dissolved_oxygen_mg_l', 5)
-            wq = "Poor" if (pd.notna(sph) and (sph < 6.5 or sph > 8.5)) else ("Fair" if (pd.notna(sdo) and sdo < 4) else "Good")
-            qc = "#ff4444" if wq == "Poor" else ("#ffd700" if wq == "Fair" else "#00ff9d")
-            sp = f"""
+            wq  = "Poor" if (pd.notna(sph) and (sph < 6.5 or sph > 8.5)) else ("Fair" if (pd.notna(sdo) and sdo < 4) else "Good")
+            qc  = "#ff4444" if wq == "Poor" else ("#ffd700" if wq == "Fair" else "#00ff9d")
+            sp  = f"""
             <div style='font-family:Arial;min-width:260px;background:#0a0f1e;color:white;padding:14px;border-radius:10px;border-left:5px solid {sc};'>
                 <h4 style='margin:0 0 8px 0;'>{si} 📊 {st_row.get('station_name','')}</h4>
                 <hr style='border-color:#1f2937;margin:8px 0;'>
@@ -816,8 +816,7 @@ with tab3:
                 fig = px.scatter(fgw, x='recharge_rate_mcm', y='extraction_pct',
                     size='avg_depth_meters' if 'avg_depth_meters' in fgw.columns else None,
                     color='district_name' if 'district_name' in fgw.columns else None,
-                    title="Groundwater Extraction vs Recharge Rate",
-                    template="plotly_dark")
+                    title="Groundwater Extraction vs Recharge Rate", template="plotly_dark")
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("No groundwater data available")
@@ -865,63 +864,40 @@ with tab4:
         st.balloons()
     else:
         aws = alerts.copy()
-
-        # Normalize source_name to avoid whitespace/case mismatch on merge
         aws['source_name'] = aws['source_name'].astype(str).str.strip().str.lower()
 
-        # Merge with sources to pull district, state, source_type
+        # Merge district / state / source_type from sources
         if not sources.empty and 'source_name' in sources.columns:
             src_copy = sources.copy()
             src_copy['source_name'] = src_copy['source_name'].astype(str).str.strip().str.lower()
-            src_cols = [c for c in ['source_name', 'source_type', 'district', 'state'] if c in src_copy.columns]
+            src_cols = [c for c in ['source_name','source_type','district','state'] if c in src_copy.columns]
             if src_cols:
                 aws = aws.merge(src_copy[src_cols], on='source_name', how='left')
-                for col in ['source_type', 'district', 'state']:
+                for col in ['source_type','district','state']:
                     if col in aws.columns:
                         aws[col] = aws[col].fillna('Unknown')
 
-        # Merge with readings/measurements to get water-quality columns
-        # Adjust 'readings' and join key to match your actual dataframe name/column
-        if 'readings' in dir() and not readings.empty:
-            readings_copy = readings.copy()
-            readings_copy['source_name'] = readings_copy['source_name'].astype(str).str.strip().str.lower()
-            quality_cols = [c for c in [
-                'source_name', 'ph_level', 'dissolved_oxygen_mg_l',
-                'turbidity_ntu', 'temperature_c'
-            ] if c in readings_copy.columns]
-            if len(quality_cols) > 1:
-                # Take the latest reading per source
-                if 'reading_time' in readings_copy.columns:
-                    readings_latest = (
-                        readings_copy.sort_values('reading_time', ascending=False)
-                        .drop_duplicates(subset=['source_name'])
-                    )
-                else:
-                    readings_latest = readings_copy.drop_duplicates(subset=['source_name'])
-                aws = aws.merge(readings_latest[quality_cols], on='source_name', how='left')
-
-        # ── Alert status counts ────────────────────────────────────────────────
+        # ── KPI row ───────────────────────────────────────────────────────────
         acounts = aws['alert_status'].value_counts()
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
+        k1, k2, k3, k4 = st.columns(4)
+        with k1:
             cc = int(acounts.get('CRITICAL', 0))
             st.metric("🔴 CRITICAL", cc,
                       delta="Immediate action required" if cc > 0 else None,
                       delta_color="inverse")
-        with c2:
+        with k2:
             wc = int(acounts.get('WARNING', 0))
             st.metric("🟡 WARNING", wc,
                       delta="Monitor closely" if wc > 0 else None,
                       delta_color="normal")
-        with c3:
-            sc = int(acounts.get('STABLE', 0))
-            st.metric("🟢 STABLE", sc, delta_color="normal")
-        with c4:
+        with k3:
+            st.metric("🟢 STABLE", int(acounts.get('STABLE', 0)), delta_color="normal")
+        with k4:
             st.metric("📊 TOTAL", len(aws))
 
         st.markdown("---")
 
-        # ── Global filters ─────────────────────────────────────────────────────
+        # ── Apply sidebar geographic / type filters ────────────────────────────
         fa = aws.copy()
         if selected_state != "All States" and 'state' in fa.columns:
             fa = fa[fa['state'] == selected_state]
@@ -930,234 +906,132 @@ with tab4:
         if selected_type != "All Types" and 'source_type' in fa.columns:
             fa = fa[fa['source_type'] == selected_type]
 
-        # Alert status filter
+        # Alert-status filter
         alert_filter_options = ["All Alerts"] + sorted(fa['alert_status'].unique().tolist())
         atf = st.selectbox("Filter by Alert Status", alert_filter_options, index=0)
         if atf != "All Alerts":
             fa = fa[fa['alert_status'] == atf]
 
-        # Sort by severity
+        # Sort CRITICAL → WARNING → STABLE
         if not fa.empty:
-            severity_map = {'CRITICAL': 0, 'WARNING': 1, 'STABLE': 2}
+            sev_order = {'CRITICAL': 0, 'WARNING': 1, 'STABLE': 2}
             fa = fa.copy()
-            fa['severity'] = fa['alert_status'].map(severity_map).fillna(3)
-            fa = fa.sort_values('severity').drop('severity', axis=1)
+            fa['_sev'] = fa['alert_status'].map(sev_order).fillna(3)
+            fa = fa.sort_values('_sev').drop(columns='_sev')
 
         if fa.empty:
-            st.info(f"ℹ️ No {atf.lower() if atf != 'All Alerts' else 'alerts'} match the current filters")
+            st.info(f"ℹ️ No alerts match the current filters.")
         else:
-            # ── Quick summary table ────────────────────────────────────────────
-            st.markdown("### 📋 Quick Alerts Overview")
-            display_cols = ['source_name', 'source_type', 'district', 'state',
-                            'alert_status', 'capacity_percent', 'alert_time']
-            display_cols = [col for col in display_cols if col in fa.columns]
+            # ── Summary table ─────────────────────────────────────────────────
+            st.subheader("📋 Alerts Overview")
+            overview_cols = [c for c in ['source_name','source_type','district','state',
+                                         'alert_status','capacity_percent','alert_time']
+                             if c in fa.columns]
+            if overview_cols:
+                ov = fa[overview_cols].copy()
+                if 'alert_time' in ov.columns:
+                    ov['alert_time'] = pd.to_datetime(ov['alert_time'], errors='coerce').dt.strftime('%Y-%m-%d %H:%M')
+                if 'capacity_percent' in ov.columns:
+                    ov['capacity_percent'] = ov['capacity_percent'].round(1).astype(str) + '%'
 
-            if display_cols:
-                display_df = fa[display_cols].copy()
-                if 'alert_time' in display_df.columns:
-                    display_df['alert_time'] = pd.to_datetime(
-                        display_df['alert_time'], errors='coerce'
-                    ).dt.strftime('%Y-%m-%d %H:%M')
-                if 'capacity_percent' in display_df.columns:
-                    display_df['capacity_percent'] = (
-                        display_df['capacity_percent'].round(1).astype(str) + '%'
-                    )
-                st.dataframe(display_df, use_container_width=True, hide_index=True, height=200)
+                def _style_status(val):
+                    colours = {
+                        'CRITICAL': 'background-color:#7f0000;color:white;font-weight:bold',
+                        'WARNING':  'background-color:#7f6000;color:white;font-weight:bold',
+                        'STABLE':   'background-color:#005f2f;color:white;font-weight:bold',
+                    }
+                    return colours.get(val, '')
+
+                st.dataframe(
+                    ov.style.applymap(_style_status, subset=['alert_status']),
+                    use_container_width=True, hide_index=True, height=220
+                )
 
             st.markdown("---")
-            st.markdown("### 📋 Detailed Alert Cards")
 
-            # ── Helper functions ───────────────────────────────────────────────
-            def safe_str(val, default='Unknown'):
+            # ── Detailed alert expanders ───────────────────────────────────────
+            st.subheader("📋 Detailed Alert Cards")
+
+            STATUS_ICON = {'CRITICAL': '🔴', 'WARNING': '🟡', 'STABLE': '🟢'}
+
+            def _safe(val, default='N/A'):
                 try:
-                    if val is None or pd.isna(val):
-                        return default
+                    return default if pd.isna(val) else str(val).strip() or default
                 except Exception:
-                    pass
-                return str(val).strip() or default
+                    return str(val)
 
-            def safe_float(val, suffix='', decimals=1):
+            def _num(val, suffix='', dec=1):
                 try:
-                    if val is None or pd.isna(val):
-                        return 'N/A'
-                    return f"{float(val):.{decimals}f}{suffix}"
+                    return f"{float(val):.{dec}f}{suffix}" if pd.notna(val) else 'N/A'
                 except Exception:
                     return 'N/A'
 
-            def format_time(timestamp):
+            def _time(ts):
                 try:
-                    if pd.isna(timestamp):
-                        return 'N/A'
+                    return 'N/A' if pd.isna(ts) else pd.to_datetime(ts).strftime('%Y-%m-%d %H:%M:%S')
                 except Exception:
-                    pass
+                    return str(ts)
+
+            for _, alert_row in fa.iterrows():
+                status      = _safe(alert_row.get('alert_status'), 'STABLE')
+                icon        = STATUS_ICON.get(status, '⚪')
+                source_name = _safe(alert_row.get('source_name'), 'Unknown Source')
+                source_type = _safe(alert_row.get('source_type'), 'Unknown')
+                district    = _safe(alert_row.get('district'),    'Unknown')
+                state_val   = _safe(alert_row.get('state'),       'Unknown')
+                reason      = _safe(alert_row.get('alert_reason'),'No reason provided')
+                alert_time  = _time(alert_row.get('alert_time'))
+                location    = ", ".join(p for p in [district, state_val] if p != 'Unknown') or source_name
+
+                cap_raw = alert_row.get('capacity_percent')
+                cap_str = _num(cap_raw, '%')
                 try:
-                    return pd.to_datetime(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+                    cap_float = float(cap_raw) if pd.notna(cap_raw) else None
                 except Exception:
-                    return str(timestamp)
+                    cap_float = None
 
-            # Status styling config
-            STATUS_CONFIG = {
-                'CRITICAL': {
-                    'border': '#ff4444',
-                    'icon':   '🔴',
-                    'bg':     'rgba(255,68,68,0.1)',
-                    'text':   'CRITICAL'
-                },
-                'WARNING': {
-                    'border': '#ffd700',
-                    'icon':   '🟡',
-                    'bg':     'rgba(255,215,0,0.1)',
-                    'text':   'WARNING'
-                },
-                'STABLE': {
-                    'border': '#00ff9d',
-                    'icon':   '🟢',
-                    'bg':     'rgba(0,255,157,0.1)',
-                    'text':   'STABLE'
-                },
-            }
+                # Expander label: icon + name + status badge
+                label = f"{icon} {source_name}  —  {status}  |  {source_type}  |  📍 {location}"
 
-            # ── Render each alert as a card ────────────────────────────────────
-            for idx, alert in fa.iterrows():
-                status = safe_str(alert.get('alert_status', 'STABLE'))
-                config = STATUS_CONFIG.get(status, STATUS_CONFIG['STABLE'])
+                with st.expander(label, expanded=(status == 'CRITICAL')):
 
-                source_name = safe_str(alert.get('source_name'))
-                source_type = safe_str(alert.get('source_type', 'Unknown'))
-                district    = safe_str(alert.get('district',    'Unknown'))
-                state       = safe_str(alert.get('state',       'Unknown'))
-                reason      = safe_str(alert.get('alert_reason','No reason provided'))
-                alert_time  = format_time(alert.get('alert_time'))
+                    # Row 1 – basic identity
+                    r1, r2, r3 = st.columns(3)
+                    r1.markdown(f"**🏷️ Source Name**\n\n{source_name}")
+                    r2.markdown(f"**🏭 Source Type**\n\n{source_type}")
+                    r3.markdown(f"**🕐 Alert Time**\n\n{alert_time}")
 
-                # Location — fallback chain so it is never blank
-                if district != 'Unknown' and state != 'Unknown':
-                    location = f"{district}, {state}"
-                elif district != 'Unknown':
-                    location = district
-                elif state != 'Unknown':
-                    location = state
-                elif source_name != 'Unknown':
-                    location = source_name          # last-resort fallback
-                else:
-                    location = "Location unknown"
+                    # Row 2 – location & status
+                    r4, r5 = st.columns(2)
+                    r4.markdown(f"**📍 Location**\n\n{location}")
+                    r5.markdown(f"**⚡ Status**\n\n{icon} **{status}**")
 
-                # Capacity bar
-                capacity_val     = alert.get('capacity_percent')
-                capacity_display = 'N/A'
-                capacity_width   = 0
-                try:
-                    if pd.notna(capacity_val):
-                        cap_float        = float(capacity_val)
-                        capacity_display = f"{cap_float:.1f}%"
-                        capacity_width   = min(max(cap_float, 0), 100)
-                except Exception:
-                    capacity_display = str(capacity_val)
+                    st.divider()
 
-                # Water-quality metrics
-                ph        = safe_float(alert.get('ph_level'),               decimals=1)
-                do        = safe_float(alert.get('dissolved_oxygen_mg_l'),  ' mg/L', decimals=1)
-                turbidity = safe_float(alert.get('turbidity_ntu'),          ' NTU',  decimals=1)
-                temp      = safe_float(alert.get('temperature_c'),          '°C',    decimals=1)
+                    # Alert reason box – colour matches severity
+                    if status == 'CRITICAL':
+                        st.error(f"⚠️ **Alert Reason:** {reason}")
+                    elif status == 'WARNING':
+                        st.warning(f"⚠️ **Alert Reason:** {reason}")
+                    else:
+                        st.success(f"✅ **Alert Reason:** {reason}")
 
-                card_html = f"""
-                <div style="
-                    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-                    border: 2px solid {config['border']};
-                    border-left: 6px solid {config['border']};
-                    border-radius: 12px;
-                    padding: 20px;
-                    margin: 15px 0;
-                    box-shadow: 0 8px 25px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05);
-                ">
-                    <!-- Header row -->
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
-                        <div>
-                            <h3 style="margin:0; font-size:1.4rem; font-weight:700; color:white;">
-                                {config['icon']} {source_name}
-                            </h3>
-                            <span style="color:#94a3b8; font-size:0.95rem; margin-top:4px; display:block;">
-                                {source_type}
-                            </span>
-                        </div>
-                        <div style="
-                            background: {config['border']};
-                            color: #000;
-                            padding: 8px 16px;
-                            border-radius: 25px;
-                            font-weight: 700;
-                            font-size: 0.9rem;
-                        ">
-                            {config['text']}
-                        </div>
-                    </div>
+                    st.divider()
 
-                    <!-- Location & time -->
-                    <div style="color:#94a3b8; margin-bottom:15px; font-size:0.95rem;">
-                        📍 <strong style="color:#e2e8f0;">{location}</strong>
-                        &nbsp;|&nbsp; 🕐 <span style="color:#e2e8f0;">{alert_time}</span>
-                    </div>
+                    # Metrics
+                    m1, m2, m3, m4, m5 = st.columns(5)
+                    m1.metric("💧 Capacity",    cap_str)
+                    m2.metric("🧪 pH Level",    _num(alert_row.get('ph_level')))
+                    m3.metric("💨 Dissolved O₂",_num(alert_row.get('dissolved_oxygen_mg_l'), ' mg/L'))
+                    m4.metric("🌫️ Turbidity",   _num(alert_row.get('turbidity_ntu'), ' NTU'))
+                    m5.metric("🌡️ Temperature", _num(alert_row.get('temperature_c'), '°C'))
 
-                    <!-- Alert reason -->
-                    <div style="
-                        background: {config['bg']};
-                        border-left: 4px solid {config['border']};
-                        padding: 15px;
-                        margin: 15px 0;
-                        border-radius: 8px;
-                    ">
-                        <strong style="color:{config['border']}; font-size:1rem;">⚠️ Alert Reason:</strong>
-                        <span style="color:#f1f5f9; margin-left:8px; font-size:0.95rem;">{reason}</span>
-                    </div>
+                    # Capacity progress bar
+                    if cap_float is not None:
+                        st.markdown("**Capacity Level**")
+                        st.progress(int(min(max(cap_float, 0), 100)))
 
-                    <!-- Metrics grid -->
-                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:20px;">
-
-                        <!-- Capacity -->
-                        <div>
-                            <div style="color:#94a3b8; font-size:0.85rem; margin-bottom:6px; font-weight:500;">💧 Capacity</div>
-                            <div style="color:white; font-weight:700; font-size:1.3rem; margin-bottom:8px;">{capacity_display}</div>
-                            <div style="background:#334155; height:8px; border-radius:4px; overflow:hidden;">
-                                <div style="
-                                    background: {config['border']};
-                                    width: {capacity_width}%;
-                                    height: 8px;
-                                    border-radius: 4px;
-                                    box-shadow: 0 0 8px {config['border']}40;
-                                "></div>
-                            </div>
-                        </div>
-
-                        <!-- pH -->
-                        <div>
-                            <div style="color:#94a3b8; font-size:0.85rem; margin-bottom:6px;">🧪 pH Level</div>
-                            <div style="color:#10b981; font-weight:700; font-size:1.3rem;">{ph}</div>
-                        </div>
-
-                        <!-- Dissolved O2 -->
-                        <div>
-                            <div style="color:#94a3b8; font-size:0.85rem; margin-bottom:6px;">💨 Dissolved O₂</div>
-                            <div style="color:#3b82f6; font-weight:700; font-size:1.3rem;">{do}</div>
-                        </div>
-
-                        <!-- Turbidity -->
-                        <div>
-                            <div style="color:#94a3b8; font-size:0.85rem; margin-bottom:6px;">🌫️ Turbidity</div>
-                            <div style="color:#f59e0b; font-weight:700; font-size:1.3rem;">{turbidity}</div>
-                        </div>
-
-                        <!-- Temperature -->
-                        <div>
-                            <div style="color:#94a3b8; font-size:0.85rem; margin-bottom:6px;">🌡️ Temperature</div>
-                            <div style="color:#ef4444; font-weight:700; font-size:1.3rem;">{temp}</div>
-                        </div>
-
-                    </div>
-                </div>
-                """
-                st.markdown(card_html, unsafe_allow_html=True)
-
-    # Add some breathing room
-    st.markdown("")
+    st.markdown("")  # breathing room
 
 # ── TAB 5  DATA TABLES ────────────────────────────────────────────────────────
 with tab5:
@@ -1172,7 +1046,8 @@ with tab5:
 
     def dl(df, fname):
         if not df.empty:
-            st.download_button("Download CSV", df.to_csv(index=False).encode('utf-8'), fname, "text/csv", use_container_width=True)
+            st.download_button("Download CSV", df.to_csv(index=False).encode('utf-8'),
+                               fname, "text/csv", use_container_width=True)
 
     if table_choice == "Water Sources":
         cols = pick(filtered_sources, ['source_name','source_type','capacity_percent','max_capacity_mcm','build_year','age','state','district','risk_level'])
@@ -1193,7 +1068,7 @@ with tab5:
         st.dataframe(ds[cols] if cols else ds, use_container_width=True, hide_index=True)
         c1, c2, c3 = st.columns(3)
         with c1: st.metric("Total Stations", len(ds))
-        with c2: st.metric("Active", len(ds[ds['status']=='Active']) if 'status' in ds.columns else "N/A")
+        with c2: st.metric("Active",      len(ds[ds['status']=='Active'])      if 'status' in ds.columns else "N/A")
         with c3: st.metric("Maintenance", len(ds[ds['status']=='Maintenance']) if 'status' in ds.columns else "N/A")
         dl(ds, f"monitoring_stations_{selected_state}_{selected_district}.csv")
 
@@ -1205,8 +1080,8 @@ with tab5:
         st.dataframe(dg[cols] if cols else dg, use_container_width=True, hide_index=True)
         c1, c2, c3 = st.columns(3)
         with c1: st.metric("Districts", len(dg))
-        with c2: st.metric("Avg Depth", f"{dg['avg_depth_meters'].mean():.1f} m" if 'avg_depth_meters' in dg.columns and not dg.empty else "N/A")
-        with c3: st.metric("High Stress", len(dg[dg['stress_level']=='High']) if 'stress_level' in dg.columns else "N/A")
+        with c2: st.metric("Avg Depth",   f"{dg['avg_depth_meters'].mean():.1f} m" if 'avg_depth_meters' in dg.columns and not dg.empty else "N/A")
+        with c3: st.metric("High Stress", len(dg[dg['stress_level']=='High'])       if 'stress_level'    in dg.columns else "N/A")
         dl(dg, f"groundwater_{selected_district}.csv")
 
     elif table_choice == "Rainfall History":
@@ -1217,21 +1092,21 @@ with tab5:
         st.dataframe(dr[cols] if cols else dr, use_container_width=True, hide_index=True)
         c1, c2, c3 = st.columns(3)
         with c1: st.metric("Total Records", len(dr))
-        with c2: st.metric("Avg Rainfall", f"{dr['rainfall_cm'].mean():.1f} cm" if 'rainfall_cm' in dr.columns and not dr.empty else "N/A")
+        with c2: st.metric("Avg Rainfall",  f"{dr['rainfall_cm'].mean():.1f} cm" if 'rainfall_cm' in dr.columns and not dr.empty else "N/A")
         with c3: st.metric("Years of Data", dr['record_year'].nunique() if 'record_year' in dr.columns else "N/A")
         dl(dr, f"rainfall_{selected_district}.csv")
 
     elif table_choice == "Water Usage":
         du = usage.copy()
-        if selected_state != "All States" and 'state' in du.columns: du = du[du['state']==selected_state]
-        if selected_district != "All Districts" and 'district' in du.columns: du = du[du['district']==selected_district]
-        if selected_type != "All Types" and 'source_type' in du.columns: du = du[du['source_type']==selected_type]
+        if selected_state    != "All States"    and 'state'       in du.columns: du = du[du['state']==selected_state]
+        if selected_district != "All Districts" and 'district'    in du.columns: du = du[du['district']==selected_district]
+        if selected_type     != "All Types"     and 'source_type' in du.columns: du = du[du['source_type']==selected_type]
         cols = pick(du, ['source_name','source_type','sector','sub_sector','consumer_name','consumption_mcm','record_year','season','state','district'])
         st.dataframe(du[cols] if cols else du, use_container_width=True, hide_index=True)
         c1, c2, c3 = st.columns(3)
-        with c1: st.metric("Total Records", len(du))
-        with c2: st.metric("Total Consumption", f"{du['consumption_mcm'].sum():.1f} MCM" if 'consumption_mcm' in du.columns and not du.empty else "N/A")
-        with c3: st.metric("Avg Consumption", f"{du['consumption_mcm'].mean():.1f} MCM" if 'consumption_mcm' in du.columns and not du.empty else "N/A")
+        with c1: st.metric("Total Records",    len(du))
+        with c2: st.metric("Total Consumption",f"{du['consumption_mcm'].sum():.1f} MCM"  if 'consumption_mcm' in du.columns and not du.empty else "N/A")
+        with c3: st.metric("Avg Consumption",  f"{du['consumption_mcm'].mean():.1f} MCM" if 'consumption_mcm' in du.columns and not du.empty else "N/A")
         dl(du, f"water_usage_{selected_state}_{selected_district}.csv")
 
     elif table_choice == "Active Alerts":
@@ -1239,9 +1114,9 @@ with tab5:
         if not sources.empty and 'source_name' in sources.columns and 'source_name' in da.columns:
             sc2 = pick(sources, ['source_name','source_type','district','state'])
             if sc2: da = da.merge(sources[sc2], on='source_name', how='left')
-        if selected_state != "All States" and 'state' in da.columns: da = da[da['state']==selected_state]
-        if selected_district != "All Districts" and 'district' in da.columns: da = da[da['district']==selected_district]
-        if selected_type != "All Types" and 'source_type' in da.columns: da = da[da['source_type']==selected_type]
+        if selected_state    != "All States"    and 'state'       in da.columns: da = da[da['state']==selected_state]
+        if selected_district != "All Districts" and 'district'    in da.columns: da = da[da['district']==selected_district]
+        if selected_type     != "All Types"     and 'source_type' in da.columns: da = da[da['source_type']==selected_type]
         cols = pick(da, ['source_name','source_type','district','state','capacity_percent','ph_level','alert_status','alert_time','alert_reason'])
         disp = da[cols].copy() if cols else da.copy()
         if 'alert_time' in disp.columns and pd.api.types.is_datetime64_any_dtype(disp['alert_time']):
@@ -1250,114 +1125,86 @@ with tab5:
         c1, c2, c3 = st.columns(3)
         with c1: st.metric("Total Alerts", len(da))
         with c2: st.metric("Critical", len(da[da['alert_status']=='CRITICAL']) if 'alert_status' in da.columns else "N/A")
-        with c3: st.metric("Warning", len(da[da['alert_status']=='WARNING']) if 'alert_status' in da.columns else "N/A")
+        with c3: st.metric("Warning",  len(da[da['alert_status']=='WARNING'])  if 'alert_status' in da.columns else "N/A")
         dl(da, f"active_alerts_{selected_state}_{selected_district}.csv")
 
     elif table_choice == "Regional Statistics":
         cols = pick(regional, ['region_name','population_count','annual_rainfall_avg_cm'])
         st.dataframe(regional[cols] if cols else regional, use_container_width=True, hide_index=True)
         c1, c2, c3 = st.columns(3)
-        with c1: st.metric("Total Regions", len(regional))
-        with c2: st.metric("Total Population", f"{regional['population_count'].sum():,}" if 'population_count' in regional.columns and not regional.empty else "N/A")
-        with c3: st.metric("Avg Rainfall", f"{regional['annual_rainfall_avg_cm'].mean():.1f} cm" if 'annual_rainfall_avg_cm' in regional.columns and not regional.empty else "N/A")
+        with c1: st.metric("Total Regions",   len(regional))
+        with c2: st.metric("Total Population",f"{regional['population_count'].sum():,}"       if 'population_count'       in regional.columns and not regional.empty else "N/A")
+        with c3: st.metric("Avg Rainfall",    f"{regional['annual_rainfall_avg_cm'].mean():.1f} cm" if 'annual_rainfall_avg_cm' in regional.columns and not regional.empty else "N/A")
         dl(regional, "regional_statistics.csv")
 
-# ── TAB 6  ADD NEW RECORD (admin only) ───────────────────────────────────────
+# ── TAB 6  ADD NEW RECORD (admin only) ────────────────────────────────────────
 if is_admin:
     with tab6:
         st.subheader("➕ Add New Record to Database")
         st.markdown("*Only Nishtant can add new records*")
-        
-        # Table selector with symbols
+
         table_choice_t6 = st.selectbox("Select Table",
-            ["🏭 Water Sources", "📊 Monitoring Stations", "🌊 Groundwater Levels",
-             "☔ Rainfall History", "💧 Water Usage", "⚠️ Active Alerts", "📈 Regional Statistics"],
+            ["🏭 Water Sources","📊 Monitoring Stations","🌊 Groundwater Levels",
+             "☔ Rainfall History","💧 Water Usage","⚠️ Active Alerts","📈 Regional Statistics"],
             key="tab6_table")
-        
+
         table_map = {
-            "🏭 Water Sources": "Water Sources",
+            "🏭 Water Sources":       "Water Sources",
             "📊 Monitoring Stations": "Monitoring Stations",
-            "🌊 Groundwater Levels": "Groundwater Levels",
-            "☔ Rainfall History": "Rainfall History",
-            "💧 Water Usage": "Water Usage",
-            "⚠️ Active Alerts": "Active Alerts",
-            "📈 Regional Statistics": "Regional Statistics"
+            "🌊 Groundwater Levels":  "Groundwater Levels",
+            "☔ Rainfall History":     "Rainfall History",
+            "💧 Water Usage":         "Water Usage",
+            "⚠️ Active Alerts":       "Active Alerts",
+            "📈 Regional Statistics": "Regional Statistics",
         }
         clean_table = table_map[table_choice_t6]
         st.markdown("---")
-        
-        # ────────────────── WATER SOURCES FORM ──────────────────
+
+        # ── WATER SOURCES ─────────────────────────────────────────────────────
         if clean_table == "Water Sources":
             with st.form("tab6_add_water_source", clear_on_submit=True):
                 st.subheader("🏭 Add New Water Source")
-                
                 col1, col2 = st.columns(2)
                 with col1:
-                    source_name = st.text_input("Source Name *", help="Enter unique source name")
-                    
-                    # Source type with symbols
-                    source_type_sel = st.selectbox("Source Type *", 
-                        ["🏭 Dam", "🌊 Reservoir", "🌊 River", "🛣️ Canal", "🏞️ Lake", "💧 Pond", "🕳️ Well"])
-                    source_type_clean = source_type_sel.replace("🏭 ", "").replace("🌊 ", "").replace("🛣️ ", "").replace("🏞️ ", "").replace("💧 ", "").replace("🕳️ ", "")
-                    
+                    source_name      = st.text_input("Source Name *")
+                    source_type_sel  = st.selectbox("Source Type *",
+                        ["🏭 Dam","🌊 Reservoir","🌊 River","🛣️ Canal","🏞️ Lake","💧 Pond","🕳️ Well"])
+                    source_type_clean= source_type_sel.replace("🏭 ","").replace("🌊 ","").replace("🛣️ ","").replace("🏞️ ","").replace("💧 ","").replace("🕳️ ","")
                     capacity_percent = st.slider("Capacity % *", 0.0, 100.0, 75.0)
                     max_capacity_mcm = st.number_input("Max Capacity (MCM) *", 0.0, 10000.0, 100.0)
-                    current_level_mcm = st.number_input("Current Level (MCM) *", 0.0, 10000.0, 75.0)
-                
+                    current_level_mcm= st.number_input("Current Level (MCM) *", 0.0, 10000.0, 75.0)
                 with col2:
-                    build_year = st.number_input("Build Year *", 1900, 2025, 2020)
-                    
-                    state_val = st.text_input("State *")
-                    district_val = st.text_input("District *")
+                    build_year       = st.number_input("Build Year *", 1900, 2025, 2020)
+                    state_val        = st.text_input("State *")
+                    district_val     = st.text_input("District *")
                     is_transboundary = st.checkbox("Is Transboundary")
-                    
-                    # Coordinate conversion with DMS
                     st.markdown("#### 📍 Coordinates")
-                    coord_method = st.radio("Coordinate Input Method", 
-                        ["Decimal Degrees", "Degrees Minutes Seconds (DMS)"],
-                        key="water_coord_method")
-                    
+                    coord_method = st.radio("Coordinate Input Method",
+                        ["Decimal Degrees","Degrees Minutes Seconds (DMS)"], key="water_coord_method")
                     if coord_method == "Decimal Degrees":
-                        latitude = st.number_input("Latitude", -90.0, 90.0, 20.5937, format="%.6f")
-                        longitude = st.number_input("Longitude", -180.0, 180.0, 78.9629, format="%.6f")
+                        latitude  = st.number_input("Latitude",  -90.0,  90.0, 20.5937, format="%.6f")
+                        longitude = st.number_input("Longitude",-180.0, 180.0, 78.9629, format="%.6f")
                     else:
                         st.markdown("Format: **24° 58' 10\" N**")
-                        
-                        # Latitude DMS
-                        col_lat1, col_lat2, col_lat3, col_lat4 = st.columns([2,1,1,1])
-                        with col_lat1:
-                            lat_deg = st.number_input("Lat °", 0, 90, 24, key="lat_deg")
-                        with col_lat2:
-                            lat_min = st.number_input("Lat '", 0, 59, 58, key="lat_min")
-                        with col_lat3:
-                            lat_sec = st.number_input('Lat "', 0.0, 59.9, 10.0, key="lat_sec")
-                        with col_lat4:
-                            lat_dir = st.selectbox("N/S", ["N", "S"], key="lat_dir")
-                        
-                        # Longitude DMS
-                        col_lon1, col_lon2, col_lon3, col_lon4 = st.columns([2,1,1,1])
-                        with col_lon1:
-                            lon_deg = st.number_input("Lon °", 0, 180, 78, key="lon_deg")
-                        with col_lon2:
-                            lon_min = st.number_input("Lon '", 0, 59, 57, key="lon_min")
-                        with col_lon3:
-                            lon_sec = st.number_input('Lon "', 0.0, 59.9, 50.0, key="lon_sec")
-                        with col_lon4:
-                            lon_dir = st.selectbox("E/W", ["E", "W"], key="lon_dir")
-                        
-                        # Convert DMS to decimal
-                        latitude = (lat_deg + lat_min/60 + lat_sec/3600) * (-1 if lat_dir == "S" else 1)
+                        la1,la2,la3,la4 = st.columns([2,1,1,1])
+                        with la1: lat_deg = st.number_input("Lat °", 0,  90, 24, key="lat_deg")
+                        with la2: lat_min = st.number_input("Lat '", 0,  59, 58, key="lat_min")
+                        with la3: lat_sec = st.number_input('Lat "', 0.0, 59.9, 10.0, key="lat_sec")
+                        with la4: lat_dir = st.selectbox("N/S", ["N","S"], key="lat_dir")
+                        lo1,lo2,lo3,lo4 = st.columns([2,1,1,1])
+                        with lo1: lon_deg = st.number_input("Lon °", 0, 180, 78, key="lon_deg")
+                        with lo2: lon_min = st.number_input("Lon '", 0,  59, 57, key="lon_min")
+                        with lo3: lon_sec = st.number_input('Lon "', 0.0, 59.9, 50.0, key="lon_sec")
+                        with lo4: lon_dir = st.selectbox("E/W", ["E","W"], key="lon_dir")
+                        latitude  = (lat_deg + lat_min/60 + lat_sec/3600) * (-1 if lat_dir == "S" else 1)
                         longitude = (lon_deg + lon_min/60 + lon_sec/3600) * (-1 if lon_dir == "W" else 1)
-                        
                         st.info(f"✅ Converted: **{latitude:.6f}, {longitude:.6f}**")
-                
-                # Auto-calculated fields preview
-                age_val = current_year - build_year
+
+                age_val      = current_year - build_year
                 health_score = round(capacity_percent * 0.4 + (100 - min(age_val, 100)) * 0.3 + 30, 2)
-                risk_level = 'Critical' if capacity_percent < 30 else ('Moderate' if capacity_percent < 60 else 'Good')
-                
+                risk_level   = 'Critical' if capacity_percent < 30 else ('Moderate' if capacity_percent < 60 else 'Good')
                 st.info(f"📊 Auto-calculated: Age={age_val} yrs, Health={health_score}%, Risk={risk_level}")
-                
+
                 submitted = st.form_submit_button("✅ Add Source to Database", use_container_width=True)
                 if submitted:
                     if not source_name or not state_val or not district_val:
@@ -1371,9 +1218,7 @@ if is_admin:
                                 'state': state_val, 'district': district_val,
                                 'is_transboundary': 1 if is_transboundary else 0,
                                 'latitude': latitude, 'longitude': longitude,
-                                'age': age_val,
-                                'health_score': health_score,
-                                'risk_level': risk_level
+                                'age': age_val, 'health_score': health_score, 'risk_level': risk_level
                             }
                             df = pd.read_csv("water_sources.csv")
                             if source_name in df['source_name'].values:
@@ -1381,66 +1226,53 @@ if is_admin:
                             else:
                                 df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
                                 df.to_csv("water_sources.csv", index=False)
-                                st.success(f"✅ Source '{source_name}' added successfully!")
+                                st.success(f"✅ Source '{source_name}' added!")
                                 st.balloons()
                                 st.json(new_data)
                                 st.cache_data.clear()
                         except Exception as e:
                             st.error(f"❌ Error: {e}")
 
-        # ────────────────── MONITORING STATIONS FORM ──────────────────
+        # ── MONITORING STATIONS ───────────────────────────────────────────────
         elif clean_table == "Monitoring Stations":
             with st.form("tab6_add_station", clear_on_submit=True):
                 st.subheader("📊 Add New Monitoring Station")
-                
                 col1, col2 = st.columns(2)
                 with col1:
-                    station_name = st.text_input("Station Name *")
-                    state_name = st.text_input("State *")
+                    station_name  = st.text_input("Station Name *")
+                    state_name    = st.text_input("State *")
                     district_name = st.text_input("District *")
-                    
                     st.markdown("#### 📍 Coordinates")
-                    coord_method = st.radio("Coordinate Input", 
-                        ["Decimal Degrees", "DMS"], key="station_coord")
-                    
+                    coord_method = st.radio("Coordinate Input", ["Decimal Degrees","DMS"], key="station_coord")
                     if coord_method == "Decimal Degrees":
-                        latitude = st.number_input("Latitude", -90.0, 90.0, 20.5937, format="%.6f")
-                        longitude = st.number_input("Longitude", -180.0, 180.0, 78.9629, format="%.6f")
+                        latitude  = st.number_input("Latitude",  -90.0,  90.0, 20.5937, format="%.6f")
+                        longitude = st.number_input("Longitude",-180.0, 180.0, 78.9629, format="%.6f")
                     else:
-                        st.markdown("Format: **24° 58' 10\" N**")
-                        col_lat1, col_lat2, col_lat3, col_lat4 = st.columns([2,1,1,1])
-                        with col_lat1: lat_deg = st.number_input("Lat °", 0, 90, 24, key="stat_lat_deg")
-                        with col_lat2: lat_min = st.number_input("Lat '", 0, 59, 58, key="stat_lat_min")
-                        with col_lat3: lat_sec = st.number_input('Lat "', 0.0, 59.9, 10.0, key="stat_lat_sec")
-                        with col_lat4: lat_dir = st.selectbox("N/S", ["N","S"], key="stat_lat_dir")
-                        
-                        col_lon1, col_lon2, col_lon3, col_lon4 = st.columns([2,1,1,1])
-                        with col_lon1: lon_deg = st.number_input("Lon °", 0, 180, 78, key="stat_lon_deg")
-                        with col_lon2: lon_min = st.number_input("Lon '", 0, 59, 57, key="stat_lon_min")
-                        with col_lon3: lon_sec = st.number_input('Lon "', 0.0, 59.9, 50.0, key="stat_lon_sec")
-                        with col_lon4: lon_dir = st.selectbox("E/W", ["E","W"], key="stat_lon_dir")
-                        
-                        latitude = (lat_deg + lat_min/60 + lat_sec/3600) * (-1 if lat_dir == "S" else 1)
+                        la1,la2,la3,la4 = st.columns([2,1,1,1])
+                        with la1: lat_deg = st.number_input("Lat °", 0, 90, 24, key="stat_lat_deg")
+                        with la2: lat_min = st.number_input("Lat '", 0, 59, 58, key="stat_lat_min")
+                        with la3: lat_sec = st.number_input('Lat "', 0.0, 59.9, 10.0, key="stat_lat_sec")
+                        with la4: lat_dir = st.selectbox("N/S", ["N","S"], key="stat_lat_dir")
+                        lo1,lo2,lo3,lo4 = st.columns([2,1,1,1])
+                        with lo1: lon_deg = st.number_input("Lon °", 0, 180, 78, key="stat_lon_deg")
+                        with lo2: lon_min = st.number_input("Lon '", 0, 59, 57, key="stat_lon_min")
+                        with lo3: lon_sec = st.number_input('Lon "', 0.0, 59.9, 50.0, key="stat_lon_sec")
+                        with lo4: lon_dir = st.selectbox("E/W", ["E","W"], key="stat_lon_dir")
+                        latitude  = (lat_deg + lat_min/60 + lat_sec/3600) * (-1 if lat_dir == "S" else 1)
                         longitude = (lon_deg + lon_min/60 + lon_sec/3600) * (-1 if lon_dir == "W" else 1)
                         st.info(f"✅ Converted: {latitude:.6f}, {longitude:.6f}")
-                
                 with col2:
-                    ph_level = st.number_input("pH Level", 0.0, 14.0, 7.0)
+                    ph_level         = st.number_input("pH Level", 0.0, 14.0, 7.0)
                     dissolved_oxygen = st.number_input("Dissolved Oxygen (mg/L)", 0.0, 20.0, 5.0)
-                    turbidity = st.number_input("Turbidity (NTU)", 0.0, 100.0, 2.0)
-                    temperature = st.number_input("Temperature (°C)", -10.0, 50.0, 25.0)
-                    status = st.selectbox("Status", ["Active", "Maintenance", "Inactive"])
-                
-                # Auto-calculate water quality
-                if ph_level < 6.5 or ph_level > 8.5 or dissolved_oxygen < 4 or turbidity > 5:
-                    quality = "Poor"
-                elif (6.5 <= ph_level <= 8.5) and dissolved_oxygen >= 4 and turbidity <= 5:
-                    quality = "Good"
-                else:
-                    quality = "Fair"
-                
+                    turbidity        = st.number_input("Turbidity (NTU)", 0.0, 100.0, 2.0)
+                    temperature      = st.number_input("Temperature (°C)", -10.0, 50.0, 25.0)
+                    status           = st.selectbox("Status", ["Active","Maintenance","Inactive"])
+
+                quality = ("Poor"  if ph_level < 6.5 or ph_level > 8.5 or dissolved_oxygen < 4 or turbidity > 5
+                           else "Good" if 6.5 <= ph_level <= 8.5 and dissolved_oxygen >= 4 and turbidity <= 5
+                           else "Fair")
                 st.info(f"📊 Water Quality: **{quality}**")
-                
+
                 submitted = st.form_submit_button("✅ Add Station", use_container_width=True)
                 if submitted:
                     if not station_name or not state_name or not district_name:
@@ -1467,26 +1299,23 @@ if is_admin:
                         except Exception as e:
                             st.error(f"❌ Error: {e}")
 
-        # ────────────────── GROUNDWATER LEVELS FORM ──────────────────
+        # ── GROUNDWATER LEVELS ────────────────────────────────────────────────
         elif clean_table == "Groundwater Levels":
             with st.form("tab6_add_groundwater", clear_on_submit=True):
                 st.subheader("🌊 Add Groundwater Level Data")
-                
                 col1, col2 = st.columns(2)
                 with col1:
-                    district_name = st.text_input("District Name *")
-                    avg_depth = st.number_input("Average Depth (meters)", 0.0, 200.0, 30.0)
+                    district_name  = st.text_input("District Name *")
+                    avg_depth      = st.number_input("Average Depth (meters)", 0.0, 200.0, 30.0)
                     extraction_pct = st.number_input("Extraction %", 0.0, 100.0, 50.0)
                 with col2:
-                    recharge_rate = st.number_input("Recharge Rate (MCM)", 0.0, 1000.0, 100.0)
+                    recharge_rate   = st.number_input("Recharge Rate (MCM)", 0.0, 1000.0, 100.0)
                     assessment_year = st.number_input("Assessment Year", 2000, 2025, 2025)
-                    
-                    # Auto-determine stress level
                     auto_stress = "Low" if avg_depth < 20 else ("Moderate" if avg_depth < 40 else "High")
                     st.info(f"Auto-calculated Stress Level: **{auto_stress}**")
-                    stress_level = st.selectbox("Stress Level", ["Low", "Moderate", "High"],
-                                                index=["Low", "Moderate", "High"].index(auto_stress))
-                
+                    stress_level = st.selectbox("Stress Level", ["Low","Moderate","High"],
+                                                index=["Low","Moderate","High"].index(auto_stress))
+
                 submitted = st.form_submit_button("✅ Add Data", use_container_width=True)
                 if submitted:
                     if not district_name:
@@ -1508,33 +1337,23 @@ if is_admin:
                         except Exception as e:
                             st.error(f"❌ Error: {e}")
 
-        # ────────────────── RAINFALL HISTORY FORM ──────────────────
+        # ── RAINFALL HISTORY ──────────────────────────────────────────────────
         elif clean_table == "Rainfall History":
             with st.form("tab6_add_rainfall", clear_on_submit=True):
                 st.subheader("☔ Add Rainfall Data")
-                
                 col1, col2 = st.columns(2)
                 with col1:
                     district_name = st.text_input("District Name *")
-                    rainfall_cm = st.number_input("Rainfall (cm)", 0.0, 1000.0, 100.0)
+                    rainfall_cm   = st.number_input("Rainfall (cm)", 0.0, 1000.0, 100.0)
                 with col2:
                     record_year = st.number_input("Record Year", 2000, 2025, 2025)
-                    season = st.selectbox("Season", ["Monsoon", "Summer", "Winter", "Post-Monsoon"])
-                    
-                    # Auto-determine rainfall category
-                    if rainfall_cm < 50:
-                        auto_cat = "Low"
-                    elif rainfall_cm < 150:
-                        auto_cat = "Moderate"
-                    elif rainfall_cm < 300:
-                        auto_cat = "High"
-                    else:
-                        auto_cat = "Extreme"
-                    
+                    season      = st.selectbox("Season", ["Monsoon","Summer","Winter","Post-Monsoon"])
+                    auto_cat    = ("Low" if rainfall_cm < 50 else "Moderate" if rainfall_cm < 150
+                                   else "High" if rainfall_cm < 300 else "Extreme")
                     st.info(f"Auto-calculated Category: **{auto_cat}**")
-                    rainfall_category = st.selectbox("Rainfall Category", ["Low", "Moderate", "High", "Extreme"],
-                                                     index=["Low", "Moderate", "High", "Extreme"].index(auto_cat))
-                
+                    rainfall_category = st.selectbox("Rainfall Category", ["Low","Moderate","High","Extreme"],
+                                                     index=["Low","Moderate","High","Extreme"].index(auto_cat))
+
                 submitted = st.form_submit_button("✅ Add Rainfall Data", use_container_width=True)
                 if submitted:
                     if not district_name:
@@ -1556,107 +1375,101 @@ if is_admin:
                         except Exception as e:
                             st.error(f"❌ Error: {e}")
 
-        # ────────────────── WATER USAGE FORM ──────────────────
+        # ── WATER USAGE ───────────────────────────────────────────────────────
         elif clean_table == "Water Usage":
             with st.form("tab6_add_usage", clear_on_submit=True):
                 st.subheader("💧 Add Water Usage Record")
-                
                 col1, col2 = st.columns(2)
                 with col1:
-                    source_name = st.text_input("Source Name *")
-                    source_type_u = st.selectbox("Source Type", 
-                        ["Dam", "Reservoir", "River", "Canal", "Lake", "Pond", "Well"])
-                    sector = st.selectbox("Sector", ["Agriculture", "Industrial", "Domestic", "Commercial"])
-                    sub_sector = st.text_input("Sub Sector", "Irrigation")
+                    source_name_u = st.text_input("Source Name *")
+                    source_type_u = st.selectbox("Source Type", ["Dam","Reservoir","River","Canal","Lake","Pond","Well"])
+                    sector        = st.selectbox("Sector", ["Agriculture","Industrial","Domestic","Commercial"])
+                    sub_sector    = st.text_input("Sub Sector", "Irrigation")
                 with col2:
-                    consumer_name = st.text_input("Consumer Name *")
+                    consumer_name   = st.text_input("Consumer Name *")
                     consumption_mcm = st.number_input("Consumption (MCM)", 0.0, 10000.0, 10.0)
-                    record_year = st.number_input("Record Year", 2000, 2025, 2025)
-                    season_u = st.selectbox("Season", ["Monsoon", "Summer", "Winter", "Post-Monsoon"])
-                    state_u = st.text_input("State *")
-                    district_u = st.text_input("District *")
-                
+                    record_year_u   = st.number_input("Record Year", 2000, 2025, 2025)
+                    season_u        = st.selectbox("Season", ["Monsoon","Summer","Winter","Post-Monsoon"])
+                    state_u         = st.text_input("State *")
+                    district_u      = st.text_input("District *")
+
                 submitted = st.form_submit_button("✅ Add Usage Record", use_container_width=True)
                 if submitted:
-                    if not source_name or not consumer_name or not state_u or not district_u:
+                    if not source_name_u or not consumer_name or not state_u or not district_u:
                         st.error("❌ Please fill all required fields (*)")
                     else:
                         try:
                             new_data = {
-                                'source_name': source_name, 'source_type': source_type_u,
+                                'source_name': source_name_u, 'source_type': source_type_u,
                                 'sector': sector, 'sub_sector': sub_sector,
                                 'consumer_name': consumer_name, 'consumption_mcm': consumption_mcm,
-                                'record_year': record_year, 'season': season_u,
+                                'record_year': record_year_u, 'season': season_u,
                                 'state': state_u, 'district': district_u
                             }
                             df = pd.read_csv("water_usage_history.csv")
                             df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
                             df.to_csv("water_usage_history.csv", index=False)
-                            st.success(f"✅ Usage record for '{source_name}' added!")
+                            st.success(f"✅ Usage record for '{source_name_u}' added!")
                             st.balloons()
                             st.json(new_data)
                             st.cache_data.clear()
                         except Exception as e:
                             st.error(f"❌ Error: {e}")
 
-        # ────────────────── ACTIVE ALERTS FORM ──────────────────
+        # ── ACTIVE ALERTS ─────────────────────────────────────────────────────
         elif clean_table == "Active Alerts":
             with st.form("tab6_add_alert", clear_on_submit=True):
                 st.subheader("⚠️ Add Active Alert")
-                
                 col1, col2 = st.columns(2)
                 with col1:
-                    source_name_a = st.text_input("Source Name *")
+                    source_name_a  = st.text_input("Source Name *")
                     capacity_pct_a = st.number_input("Capacity %", 0.0, 100.0, 25.0)
-                    ph_level_a = st.number_input("pH Level", 0.0, 14.0, 7.0)
-                    do_a = st.number_input("Dissolved Oxygen (mg/L)", 0.0, 20.0, 5.0)
+                    ph_level_a     = st.number_input("pH Level", 0.0, 14.0, 7.0)
+                    do_a           = st.number_input("Dissolved Oxygen (mg/L)", 0.0, 20.0, 5.0)
                 with col2:
-                    turbidity_a = st.number_input("Turbidity (NTU)", 0.0, 500.0, 2.0)
-                    temp_a = st.number_input("Temperature (°C)", -10.0, 50.0, 25.0)
-                    alert_time_a = st.text_input("Alert Time", value=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-                
-                # Auto-determine alert status
+                    turbidity_a   = st.number_input("Turbidity (NTU)", 0.0, 500.0, 2.0)
+                    temp_a        = st.number_input("Temperature (°C)", -10.0, 50.0, 25.0)
+                    alert_time_a  = st.text_input("Alert Time", value=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                    state_a       = st.text_input("State *")
+                    district_a    = st.text_input("District *")
+                    source_type_a = st.selectbox("Source Type",
+                        ["Reservoir","River","Lake","Groundwater","Dam","Canal","Well","Other"])
+
+                # Auto-determine status
                 if capacity_pct_a < 30 or ph_level_a < 6 or ph_level_a > 9:
                     auto_status = "CRITICAL"
                 elif capacity_pct_a < 60 or ph_level_a < 6.5 or ph_level_a > 8.5 or do_a < 4 or turbidity_a > 5:
                     auto_status = "WARNING"
                 else:
                     auto_status = "STABLE"
-                
-                st.info(f"Auto-calculated Status: **{auto_status}**")
-                alert_status = st.selectbox("Alert Status", ["CRITICAL", "WARNING", "STABLE"],
-                                          index=["CRITICAL", "WARNING", "STABLE"].index(auto_status))
-                
-                # Auto-generate alert reason
+
                 reasons = []
-                if capacity_pct_a < 30:
-                    reasons.append(f"Critical capacity: {capacity_pct_a}%")
-                elif capacity_pct_a < 60:
-                    reasons.append(f"Low capacity: {capacity_pct_a}%")
-                if ph_level_a < 6.5:
-                    reasons.append(f"pH too low: {ph_level_a}")
-                elif ph_level_a > 8.5:
-                    reasons.append(f"pH too high: {ph_level_a}")
-                if do_a < 4:
-                    reasons.append(f"Low DO: {do_a} mg/L")
-                if turbidity_a > 5:
-                    reasons.append(f"High turbidity: {turbidity_a} NTU")
-                
+                if capacity_pct_a < 30:   reasons.append(f"Critical capacity: {capacity_pct_a}%")
+                elif capacity_pct_a < 60: reasons.append(f"Low capacity: {capacity_pct_a}%")
+                if ph_level_a < 6.5:      reasons.append(f"pH too low: {ph_level_a}")
+                elif ph_level_a > 8.5:    reasons.append(f"pH too high: {ph_level_a}")
+                if do_a < 4:              reasons.append(f"Low DO: {do_a} mg/L")
+                if turbidity_a > 5:       reasons.append(f"High turbidity: {turbidity_a} NTU")
                 auto_reason = " | ".join(reasons) if reasons else "Monitoring alert - Routine check"
-                alert_reason = st.text_area("Alert Reason", value=auto_reason, height=100)
-                
+
+                st.info(f"Auto-calculated Status: **{auto_status}**")
+                alert_status_a = st.selectbox("Alert Status", ["CRITICAL","WARNING","STABLE"],
+                                              index=["CRITICAL","WARNING","STABLE"].index(auto_status))
+                alert_reason_a = st.text_area("Alert Reason", value=auto_reason, height=80)
+
                 submitted = st.form_submit_button("✅ Add Alert", use_container_width=True)
                 if submitted:
-                    if not source_name_a:
-                        st.error("❌ Please enter source name")
+                    if not source_name_a or not state_a or not district_a:
+                        st.error("❌ Please fill all required fields (*)")
                     else:
                         try:
                             new_data = {
-                                'source_name': source_name_a, 'capacity_percent': capacity_pct_a,
-                                'ph_level': ph_level_a, 'dissolved_oxygen_mg_l': do_a,
-                                'turbidity_ntu': turbidity_a, 'temperature_c': temp_a,
-                                'alert_time': alert_time_a, 'alert_status': alert_status,
-                                'alert_reason': alert_reason
+                                'source_name': source_name_a, 'source_type': source_type_a,
+                                'state': state_a, 'district': district_a,
+                                'capacity_percent': capacity_pct_a, 'ph_level': ph_level_a,
+                                'dissolved_oxygen_mg_l': do_a, 'turbidity_ntu': turbidity_a,
+                                'temperature_c': temp_a, 'alert_status': alert_status_a,
+                                'alert_reason': alert_reason_a, 'alert_time': alert_time_a
                             }
                             df = pd.read_csv("active_alerts.csv")
                             df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
@@ -1668,20 +1481,19 @@ if is_admin:
                         except Exception as e:
                             st.error(f"❌ Error: {e}")
 
-        # ────────────────── REGIONAL STATISTICS FORM ──────────────────
+        # ── REGIONAL STATISTICS ───────────────────────────────────────────────
         elif clean_table == "Regional Statistics":
             with st.form("tab6_add_regional", clear_on_submit=True):
                 st.subheader("📈 Add Regional Statistics")
-                
                 col1, col2 = st.columns(2)
                 with col1:
-                    region_name = st.text_input("Region Name *")
-                    population_count = st.number_input("Population Count", 0, 1000000000, 1000000, step=10000)
+                    region_name      = st.text_input("Region Name *")
+                    population_count = st.number_input("Population Count", 0, 1_000_000_000, 1_000_000, step=10_000)
                 with col2:
                     annual_rainfall_avg = st.number_input("Annual Rainfall Avg (cm)", 0.0, 1000.0, 100.0)
                     total_water_sources = st.number_input("Total Water Sources", 0, 10000, 500)
-                    groundwater_avail = st.selectbox("Groundwater Availability", ["Low", "Moderate", "High", "Very High"])
-                
+                    groundwater_avail   = st.selectbox("Groundwater Availability", ["Low","Moderate","High","Very High"])
+
                 submitted = st.form_submit_button("✅ Add Regional Data", use_container_width=True)
                 if submitted:
                     if not region_name:
@@ -1710,7 +1522,8 @@ if is_admin:
 
 # ── SIDEBAR FILTER SUMMARY ────────────────────────────────────────────────────
 with st.sidebar.expander("Current Filter Summary", expanded=False):
-    smc = len(filtered_sources[filtered_sources['latitude'].notna()]) if not filtered_sources.empty and 'latitude' in filtered_sources.columns else 0
+    smc = (len(filtered_sources[filtered_sources['latitude'].notna()])
+           if not filtered_sources.empty and 'latitude' in filtered_sources.columns else 0)
     st.markdown(
         f"**Time:** {year_range[0]}-{year_range[1]}  \n"
         f"**State:** {selected_state}  \n"
@@ -1739,9 +1552,11 @@ if st.sidebar.button("Export All Filtered Data", use_container_width=True):
         for sheet_name, df in export_data.items():
             if not df.empty:
                 df.to_excel(writer, sheet_name=sheet_name, index=False)
-    st.sidebar.download_button("Download Excel Report", output.getvalue(),
+    st.sidebar.download_button(
+        "Download Excel Report", output.getvalue(),
         f"aquastat_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 # ── FOOTER ────────────────────────────────────────────────────────────────────
 st.markdown("---")
