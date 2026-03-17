@@ -858,33 +858,70 @@ with tab3:
 
 # ── TAB 4  ALERTS ─────────────────────────────────────────────────────────────
 with tab4:
-    st.subheader("Active Alerts and Warnings")
+    st.subheader("🚨 Active Alerts and Warnings")
 
-    if not alerts.empty and 'alert_status' in alerts.columns:
+    if alerts.empty or 'alert_status' not in alerts.columns:
+        st.success("✅ No active alerts - All systems normal!")
+        st.balloons()
+    else:
         aws = alerts.copy()
-        if not sources.empty and 'source_name' in sources.columns and 'source_name' in aws.columns:
-            src_cols = [c for c in ['source_name','source_type','district','state'] if c in sources.columns]
+
+        # Normalize source_name to avoid whitespace/case mismatch on merge
+        aws['source_name'] = aws['source_name'].astype(str).str.strip().str.lower()
+
+        # Merge with sources to pull district, state, source_type
+        if not sources.empty and 'source_name' in sources.columns:
+            src_copy = sources.copy()
+            src_copy['source_name'] = src_copy['source_name'].astype(str).str.strip().str.lower()
+            src_cols = [c for c in ['source_name', 'source_type', 'district', 'state'] if c in src_copy.columns]
             if src_cols:
-                aws = aws.merge(sources[src_cols], on='source_name', how='left')
-                for col in ['source_type','district','state']:
+                aws = aws.merge(src_copy[src_cols], on='source_name', how='left')
+                for col in ['source_type', 'district', 'state']:
                     if col in aws.columns:
                         aws[col] = aws[col].fillna('Unknown')
 
+        # Merge with readings/measurements to get water-quality columns
+        # Adjust 'readings' and join key to match your actual dataframe name/column
+        if 'readings' in dir() and not readings.empty:
+            readings_copy = readings.copy()
+            readings_copy['source_name'] = readings_copy['source_name'].astype(str).str.strip().str.lower()
+            quality_cols = [c for c in [
+                'source_name', 'ph_level', 'dissolved_oxygen_mg_l',
+                'turbidity_ntu', 'temperature_c'
+            ] if c in readings_copy.columns]
+            if len(quality_cols) > 1:
+                # Take the latest reading per source
+                if 'reading_time' in readings_copy.columns:
+                    readings_latest = (
+                        readings_copy.sort_values('reading_time', ascending=False)
+                        .drop_duplicates(subset=['source_name'])
+                    )
+                else:
+                    readings_latest = readings_copy.drop_duplicates(subset=['source_name'])
+                aws = aws.merge(readings_latest[quality_cols], on='source_name', how='left')
+
+        # ── Alert status counts ────────────────────────────────────────────────
         acounts = aws['alert_status'].value_counts()
         c1, c2, c3, c4 = st.columns(4)
         with c1:
             cc = int(acounts.get('CRITICAL', 0))
-            st.metric("CRITICAL", cc, delta="Immediate action required" if cc > 0 else None, delta_color="inverse")
+            st.metric("🔴 CRITICAL", cc,
+                      delta="Immediate action required" if cc > 0 else None,
+                      delta_color="inverse")
         with c2:
             wc = int(acounts.get('WARNING', 0))
-            st.metric("WARNING", wc, delta="Monitor closely" if wc > 0 else None)
+            st.metric("🟡 WARNING", wc,
+                      delta="Monitor closely" if wc > 0 else None,
+                      delta_color="normal")
         with c3:
-            st.metric("STABLE", int(acounts.get('STABLE', 0)))
+            sc = int(acounts.get('STABLE', 0))
+            st.metric("🟢 STABLE", sc, delta_color="normal")
         with c4:
-            st.metric("TOTAL", len(aws))
+            st.metric("📊 TOTAL", len(aws))
 
         st.markdown("---")
 
+        # ── Global filters ─────────────────────────────────────────────────────
         fa = aws.copy()
         if selected_state != "All States" and 'state' in fa.columns:
             fa = fa[fa['state'] == selected_state]
@@ -893,88 +930,234 @@ with tab4:
         if selected_type != "All Types" and 'source_type' in fa.columns:
             fa = fa[fa['source_type'] == selected_type]
 
-        atf = st.selectbox("Filter by Alert Status", ["All Alerts","CRITICAL","WARNING","STABLE"], index=0)
+        # Alert status filter
+        alert_filter_options = ["All Alerts"] + sorted(fa['alert_status'].unique().tolist())
+        atf = st.selectbox("Filter by Alert Status", alert_filter_options, index=0)
         if atf != "All Alerts":
             fa = fa[fa['alert_status'] == atf]
 
-        if fa.empty:
-            st.info(f"No {atf.lower()} alerts match the current filters")
-        else:
+        # Sort by severity
+        if not fa.empty:
+            severity_map = {'CRITICAL': 0, 'WARNING': 1, 'STABLE': 2}
             fa = fa.copy()
-            fa['_sev'] = fa['alert_status'].map({'CRITICAL':0,'WARNING':1,'STABLE':2})
-            fa = fa.sort_values('_sev').drop('_sev', axis=1)
+            fa['severity'] = fa['alert_status'].map(severity_map).fillna(3)
+            fa = fa.sort_values('severity').drop('severity', axis=1)
 
-            def _s(v, d='Unknown'):
-                if v is None: return d
-                s = str(v)
-                return d if s.lower() in ('nan','none','') else s
+        if fa.empty:
+            st.info(f"ℹ️ No {atf.lower() if atf != 'All Alerts' else 'alerts'} match the current filters")
+        else:
+            # ── Quick summary table ────────────────────────────────────────────
+            st.markdown("### 📋 Quick Alerts Overview")
+            display_cols = ['source_name', 'source_type', 'district', 'state',
+                            'alert_status', 'capacity_percent', 'alert_time']
+            display_cols = [col for col in display_cols if col in fa.columns]
 
-            def _m(v, suf=''):
-                if v is None: return "N/A"
-                if isinstance(v, float) and np.isnan(v): return "N/A"
-                return f"{v}{suf}"
+            if display_cols:
+                display_df = fa[display_cols].copy()
+                if 'alert_time' in display_df.columns:
+                    display_df['alert_time'] = pd.to_datetime(
+                        display_df['alert_time'], errors='coerce'
+                    ).dt.strftime('%Y-%m-%d %H:%M')
+                if 'capacity_percent' in display_df.columns:
+                    display_df['capacity_percent'] = (
+                        display_df['capacity_percent'].round(1).astype(str) + '%'
+                    )
+                st.dataframe(display_df, use_container_width=True, hide_index=True, height=200)
 
-            for _, alert in fa.iterrows():
-                st_val = alert['alert_status']
-                if st_val == 'CRITICAL':
-                    bc, icon, sevtxt = "#ff4444", "🔴", "IMMEDIATE ACTION REQUIRED"
-                elif st_val == 'WARNING':
-                    bc, icon, sevtxt = "#ffd700", "🟡", "MONITOR CLOSELY"
+            st.markdown("---")
+            st.markdown("### 📋 Detailed Alert Cards")
+
+            # ── Helper functions ───────────────────────────────────────────────
+            def safe_str(val, default='Unknown'):
+                try:
+                    if val is None or pd.isna(val):
+                        return default
+                except Exception:
+                    pass
+                return str(val).strip() or default
+
+            def safe_float(val, suffix='', decimals=1):
+                try:
+                    if val is None or pd.isna(val):
+                        return 'N/A'
+                    return f"{float(val):.{decimals}f}{suffix}"
+                except Exception:
+                    return 'N/A'
+
+            def format_time(timestamp):
+                try:
+                    if pd.isna(timestamp):
+                        return 'N/A'
+                except Exception:
+                    pass
+                try:
+                    return pd.to_datetime(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+                except Exception:
+                    return str(timestamp)
+
+            # Status styling config
+            STATUS_CONFIG = {
+                'CRITICAL': {
+                    'border': '#ff4444',
+                    'icon':   '🔴',
+                    'bg':     'rgba(255,68,68,0.1)',
+                    'text':   'CRITICAL'
+                },
+                'WARNING': {
+                    'border': '#ffd700',
+                    'icon':   '🟡',
+                    'bg':     'rgba(255,215,0,0.1)',
+                    'text':   'WARNING'
+                },
+                'STABLE': {
+                    'border': '#00ff9d',
+                    'icon':   '🟢',
+                    'bg':     'rgba(0,255,157,0.1)',
+                    'text':   'STABLE'
+                },
+            }
+
+            # ── Render each alert as a card ────────────────────────────────────
+            for idx, alert in fa.iterrows():
+                status = safe_str(alert.get('alert_status', 'STABLE'))
+                config = STATUS_CONFIG.get(status, STATUS_CONFIG['STABLE'])
+
+                source_name = safe_str(alert.get('source_name'))
+                source_type = safe_str(alert.get('source_type', 'Unknown'))
+                district    = safe_str(alert.get('district',    'Unknown'))
+                state       = safe_str(alert.get('state',       'Unknown'))
+                reason      = safe_str(alert.get('alert_reason','No reason provided'))
+                alert_time  = format_time(alert.get('alert_time'))
+
+                # Location — fallback chain so it is never blank
+                if district != 'Unknown' and state != 'Unknown':
+                    location = f"{district}, {state}"
+                elif district != 'Unknown':
+                    location = district
+                elif state != 'Unknown':
+                    location = state
+                elif source_name != 'Unknown':
+                    location = source_name          # last-resort fallback
                 else:
-                    bc, icon, sevtxt = "#00ff9d", "🟢", "NORMAL OPERATIONS"
+                    location = "Location unknown"
 
-                sname  = _s(alert.get('source_name'))
-                stype  = _s(alert.get('source_type'))
-                dist   = _s(alert.get('district'))
-                state  = _s(alert.get('state'))
-                reason = _s(alert.get('alert_reason'), 'No reason provided')
-                loc = f"{dist}, {state}" if dist != 'Unknown' and state != 'Unknown' else (dist if dist != 'Unknown' else (state if state != 'Unknown' else "Location unknown"))
+                # Capacity bar
+                capacity_val     = alert.get('capacity_percent')
+                capacity_display = 'N/A'
+                capacity_width   = 0
+                try:
+                    if pd.notna(capacity_val):
+                        cap_float        = float(capacity_val)
+                        capacity_display = f"{cap_float:.1f}%"
+                        capacity_width   = min(max(cap_float, 0), 100)
+                except Exception:
+                    capacity_display = str(capacity_val)
 
-                at = alert.get('alert_time', '')
-                tstr = at.strftime('%Y-%m-%d %H:%M:%S') if isinstance(at, pd.Timestamp) else str(at)
+                # Water-quality metrics
+                ph        = safe_float(alert.get('ph_level'),               decimals=1)
+                do        = safe_float(alert.get('dissolved_oxygen_mg_l'),  ' mg/L', decimals=1)
+                turbidity = safe_float(alert.get('turbidity_ntu'),          ' NTU',  decimals=1)
+                temp      = safe_float(alert.get('temperature_c'),          '°C',    decimals=1)
 
-                raw_cap = alert.get('capacity_percent', None)
-                if raw_cap is None or (isinstance(raw_cap, float) and np.isnan(raw_cap)):
-                    cap_disp, cv = "N/A", 0.0
-                else:
-                    cv = float(raw_cap)
-                    cap_disp = f"{cv:.1f}%"
+                card_html = f"""
+                <div style="
+                    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+                    border: 2px solid {config['border']};
+                    border-left: 6px solid {config['border']};
+                    border-radius: 12px;
+                    padding: 20px;
+                    margin: 15px 0;
+                    box-shadow: 0 8px 25px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05);
+                ">
+                    <!-- Header row -->
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
+                        <div>
+                            <h3 style="margin:0; font-size:1.4rem; font-weight:700; color:white;">
+                                {config['icon']} {source_name}
+                            </h3>
+                            <span style="color:#94a3b8; font-size:0.95rem; margin-top:4px; display:block;">
+                                {source_type}
+                            </span>
+                        </div>
+                        <div style="
+                            background: {config['border']};
+                            color: #000;
+                            padding: 8px 16px;
+                            border-radius: 25px;
+                            font-weight: 700;
+                            font-size: 0.9rem;
+                        ">
+                            {config['text']}
+                        </div>
+                    </div>
 
-                ph_d   = _m(alert.get('ph_level'))
-                do_d   = _m(alert.get('dissolved_oxygen_mg_l'), ' mg/L')
-                turb_d = _m(alert.get('turbidity_ntu'), ' NTU')
-                temp_d = _m(alert.get('temperature_c'), ' C')
+                    <!-- Location & time -->
+                    <div style="color:#94a3b8; margin-bottom:15px; font-size:0.95rem;">
+                        📍 <strong style="color:#e2e8f0;">{location}</strong>
+                        &nbsp;|&nbsp; 🕐 <span style="color:#e2e8f0;">{alert_time}</span>
+                    </div>
 
-                parts = [
-                    f'<div style="background:rgba(17,25,40,0.95);border:2px solid {bc};border-left:6px solid {bc};border-radius:15px;padding:20px;margin:12px 0;">',
-                    f'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">',
-                    f'<div><span style="font-size:1.25rem;font-weight:700;color:white;">{icon} {sname}</span><br>',
-                    f'<span style="color:#8892b0;font-size:0.9rem;">{stype} | {loc}</span></div>',
-                    f'<div style="text-align:right;"><span style="color:{bc};font-size:1.1rem;font-weight:700;">{st_val}</span><br>',
-                    f'<span style="color:#8892b0;font-size:0.78rem;">{sevtxt}</span></div></div>',
-                    f'<hr style="border:none;border-top:1px solid {bc};margin:10px 0;">',
-                    f'<div style="background:rgba(0,0,0,0.25);border-left:4px solid {bc};padding:10px 14px;border-radius:6px;margin-bottom:14px;">',
-                    f'<span style="color:{bc};font-weight:700;">Alert Reason: </span>',
-                    f'<span style="color:white;">{reason}</span></div>',
-                    f'<div style="display:flex;flex-wrap:wrap;gap:24px;margin-bottom:14px;">',
-                    f'<div style="flex:1;min-width:180px;">',
-                    f'<div style="color:#aaa;font-size:0.82rem;">Current Capacity</div>',
-                    f'<div style="font-size:1.05rem;font-weight:700;color:white;margin:4px 0;">{cap_disp}</div>',
-                    f'<div style="background:#1f2937;height:8px;border-radius:4px;">',
-                    f'<div style="background:{bc};width:{cv}%;height:8px;border-radius:4px;"></div></div></div>',
-                    f'<div><div style="color:#aaa;font-size:0.82rem;">pH Level</div><div style="color:white;font-weight:600;margin-top:4px;">{ph_d}</div></div>',
-                    f'<div><div style="color:#aaa;font-size:0.82rem;">Alert Time</div><div style="color:white;margin-top:4px;font-size:0.9rem;">{tstr}</div></div>',
-                    f'</div>',
-                    f'<div style="display:flex;flex-wrap:wrap;gap:24px;padding-top:12px;border-top:1px solid #1f2937;">',
-                    f'<div><div style="color:#8892b0;font-size:0.8rem;">Dissolved Oxygen</div><strong style="color:white;">{do_d}</strong></div>',
-                    f'<div><div style="color:#8892b0;font-size:0.8rem;">Turbidity</div><strong style="color:white;">{turb_d}</strong></div>',
-                    f'<div><div style="color:#8892b0;font-size:0.8rem;">Temperature</div><strong style="color:white;">{temp_d}</strong></div>',
-                    f'</div></div>',
-                ]
-                st.markdown("".join(parts), unsafe_allow_html=True)
-    else:
-        st.success("No active alerts - All systems normal")
-        st.balloons()
+                    <!-- Alert reason -->
+                    <div style="
+                        background: {config['bg']};
+                        border-left: 4px solid {config['border']};
+                        padding: 15px;
+                        margin: 15px 0;
+                        border-radius: 8px;
+                    ">
+                        <strong style="color:{config['border']}; font-size:1rem;">⚠️ Alert Reason:</strong>
+                        <span style="color:#f1f5f9; margin-left:8px; font-size:0.95rem;">{reason}</span>
+                    </div>
+
+                    <!-- Metrics grid -->
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:20px;">
+
+                        <!-- Capacity -->
+                        <div>
+                            <div style="color:#94a3b8; font-size:0.85rem; margin-bottom:6px; font-weight:500;">💧 Capacity</div>
+                            <div style="color:white; font-weight:700; font-size:1.3rem; margin-bottom:8px;">{capacity_display}</div>
+                            <div style="background:#334155; height:8px; border-radius:4px; overflow:hidden;">
+                                <div style="
+                                    background: {config['border']};
+                                    width: {capacity_width}%;
+                                    height: 8px;
+                                    border-radius: 4px;
+                                    box-shadow: 0 0 8px {config['border']}40;
+                                "></div>
+                            </div>
+                        </div>
+
+                        <!-- pH -->
+                        <div>
+                            <div style="color:#94a3b8; font-size:0.85rem; margin-bottom:6px;">🧪 pH Level</div>
+                            <div style="color:#10b981; font-weight:700; font-size:1.3rem;">{ph}</div>
+                        </div>
+
+                        <!-- Dissolved O2 -->
+                        <div>
+                            <div style="color:#94a3b8; font-size:0.85rem; margin-bottom:6px;">💨 Dissolved O₂</div>
+                            <div style="color:#3b82f6; font-weight:700; font-size:1.3rem;">{do}</div>
+                        </div>
+
+                        <!-- Turbidity -->
+                        <div>
+                            <div style="color:#94a3b8; font-size:0.85rem; margin-bottom:6px;">🌫️ Turbidity</div>
+                            <div style="color:#f59e0b; font-weight:700; font-size:1.3rem;">{turbidity}</div>
+                        </div>
+
+                        <!-- Temperature -->
+                        <div>
+                            <div style="color:#94a3b8; font-size:0.85rem; margin-bottom:6px;">🌡️ Temperature</div>
+                            <div style="color:#ef4444; font-weight:700; font-size:1.3rem;">{temp}</div>
+                        </div>
+
+                    </div>
+                </div>
+                """
+                st.markdown(card_html, unsafe_allow_html=True)
+
+    # Add some breathing room
+    st.markdown("")
 
 # ── TAB 5  DATA TABLES ────────────────────────────────────────────────────────
 with tab5:
